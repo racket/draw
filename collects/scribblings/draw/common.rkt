@@ -1,4 +1,3 @@
-
 (module common racket/base
   (require scribble/manual
            scribble/basic
@@ -13,11 +12,13 @@
            (all-from-out "blurbs.ss")
            (all-from-out "../reference/mz.ss"))
 
-  (require (for-label racket/gui/base
+  (require (for-label racket/draw
+                      racket/gui/base
                       racket/class
                       racket/contract
                       racket/base))
-  (provide (for-label (all-from-out racket/gui/base)
+  (provide (for-label (all-from-out racket/draw)
+                      (all-from-out racket/gui/base)
                       (all-from-out racket/class)
                       (all-from-out racket/contract)
                       (all-from-out racket/base))))

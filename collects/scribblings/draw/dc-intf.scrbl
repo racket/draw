@@ -7,12 +7,6 @@ A @scheme[dc<%>] object is a drawing context for drawing graphics and
  text.  It represents output devices in a generic way; e.g., a canvas
  has a drawing context, as does a printer.
 
-The drawing methods, such as @method[dc<%> draw-rectangle], accept
-real number values as arguments, but the results are only well-defined
-when the drawing coordinates are in the range @scheme[-16383] to
-@scheme[16383]. This restriction applies to the coordinates both
-before and after offsets and scaling factors are applied.
-
 
 @defmethod[(cache-font-metrics-key)
            exact-integer?]{
@@ -32,9 +26,26 @@ available for caching text-extent information.}
            void?]{
 
 Clears the drawing region (fills it with the current background color,
-as determined by @method[dc<%> get-background]).
+as determined by @method[dc<%> get-background]). See also @method[dc<%> erase].
 
 }
+
+@defmethod[(copy [x real?]
+                 [y real?]
+                 [width (and/c real? (not/c negative?))]
+                 [height (and/c real? (not/c negative?))]
+                 [x2 real?]
+                 [y2 real?])
+           void?]{
+
+Copies the rectangle defined by @racket[x], @racket[y],
+@racket[width], and @racket[height] of the drawing context to the same
+drawing context at the position specified by @racket[x2] and
+@racket[y2].
+
+The result is undefined if the source and destination rectangles
+overlap.}
+
 
 @defmethod[(draw-arc [x real?]
                      [y real?]
@@ -77,7 +88,7 @@ If both the pen and brush are non-transparent, the wedge is filled
                         [mask (or/c (is-a?/c bitmap%) false/c) #f])
            boolean?]{
 
-Displays a bitmap. The @scheme[dest-x] and @scheme[dest-y] arguments
+Displays the @racket[source] bitmap. The @scheme[dest-x] and @scheme[dest-y] arguments
  are in DC coordinates.
 
 For color bitmaps, the drawing style and color arguments are
@@ -86,34 +97,33 @@ For color bitmaps, the drawing style and color arguments are
  and color settings to draw a monochrome stipple (see @scheme[brush%]
  for more information).
 
-If a mask bitmap is supplied, it must have the same width and height
- as the bitmap to display, and its @method[bitmap% ok?] must return
- true, otherwise @|MismatchExn|. The bitmap to draw and the mask
+If a @racket[mask] bitmap is supplied, it must have the same width and height
+ as @racket[source], and its @method[bitmap% ok?] must return
+ true, otherwise @|MismatchExn|. The @racket[source] bitmap and @racket[mask]
  bitmap can be the same object, but if the drawing context is a
  @scheme[bitmap-dc%] object, both bitmaps must be distinct from the
  destination bitmap, otherwise @|MismatchExn|.
 
-If the mask bitmap is monochrome, drawing occurs in the target
- @scheme[dc<%>] only where the mask bitmap contains black pixels.
+If the @racket[mask] bitmap is monochrome, drawing occurs in the
+ target @scheme[dc<%>] only where the mask bitmap contains black
+ pixels (independent of @racket[style], which controls how the white
+ pixels of a monochrome @racket[source] are handled).
 
-If the mask bitmap is grayscale and the bitmap to draw is not
- monochrome, then the blackness of each mask pixel controls the
- opacity of the drawn pixel (i.e., the mask acts as an inverted alpha
- channel), at least on most platforms. (Non-monochrome masks
- are collapsed to monochrome under X when the RENDER extension is not
- available, and under Windows 95 and NT when @filepath{msing32.dll} is not
- available.) Other combinations involving a non-monochrome mask (i.e.,
- a non-grayscale mask or a monochrome bitmap to draw) produce
- platform-specific results.
+If the @racket[mask] bitmap is grayscale, then the blackness of each
+ mask pixel controls the opacity of the drawn pixel (i.e., the mask
+ acts as an inverted alpha channel). If the @racket[mask] bitmap is
+ color, the component values of a given pixel are averaged to arrive
+ at an @racket[alpha] value for the pixel.
 
-The current brush, current pen, current text, and current alpha
- settings for the DC have no effect on how the bitmap is drawn, but
- the bitmap is scaled if the DC has a scale.
+The current brush, current pen, and current text for the DC have no
+ effect on how the bitmap is drawn, but the bitmap is scaled if the DC
+ has a scale, and the DC's alpha setting determines the opacity of the
+ drawn pixels (in combination with an alpha channel of @racket[bitmap]
+ and any given @racket[mask]).
 
-For @scheme[post-script-dc%] output, the mask bitmap is currently
- ignored, and the @scheme['solid] style is treated the same as
- @scheme['opaque]. (However, mask bitmaps and @scheme['solid] drawing
- may become supported for @scheme[post-script-dc%] in the future.)
+For @scheme[post-script-dc%] and @racket[pdf-dc%] output, opacity from
+ an alpha channel in @racket[bitmap] or from @racket[mask] is
+ rounded to full transparency or opacity.
 
 The result is @scheme[#t] if the bitmap is successfully drawn,
  @scheme[#f] otherwise (possibly because the bitmap's @method[bitmap%
@@ -232,12 +242,7 @@ The @scheme[fill-style] argument specifies the fill rule:
  point is considered enclosed within the path if it is enclosed by an
  odd number of sub-path loops. In @scheme['winding] mode, a point is
  considered enclosed within the path if it is enclosed by more or less
- clockwise sub-path loops than counter-clockwise sub-path loops. In
- unsmoothed mode, the @scheme['winding] fill rule is not supported
- under Mac OS X and it is not supported when @scheme[path] contains
- multiple sub-paths; the @scheme['winding] fill rules is always
- supported when smoothing is enabled (see
-@method[dc<%> set-smoothing]).
+ clockwise sub-path loops than counter-clockwise sub-path loops.
 
 See also @method[dc<%> set-smoothing] for information on the
  @scheme['aligned] smoothing mode.
@@ -281,10 +286,7 @@ The @scheme[fill-style] argument specifies the fill rule:
  point is considered enclosed within the polygon if it is enclosed by
  an odd number of loops. In @scheme['winding] mode, a point is
  considered enclosed within the polygon if it is enclosed by more or
- less clockwise loops than counter-clockwise loops. The
- @scheme['winding] fill rule is not supported under Mac OS X,
- except when smoothing is enabled (see
-@method[dc<%> set-smoothing]).
+ less clockwise loops than counter-clockwise loops.
 
 See also @method[dc<%> set-smoothing] for information on the
  @scheme['aligned] smoothing mode.
@@ -447,6 +449,24 @@ For printer or PostScript output, an exception is raised if
 
 }
 
+
+@defmethod[(erase)
+           void?]{
+
+Erases the drawing region by filling it with white and, for a drawing
+context that keeps an alpha channels, sets all alphas to zero.
+
+}
+
+
+@defmethod[(flush) void?]{
+
+Calls the @xmethod[canvas<%> flush] method for
+@racket[canvas<%>] output, and has no effect for other kinds of
+drawing contexts.}
+
+
+
 @defmethod[(get-alpha)
            (real-in 0 1)]{
 
@@ -516,13 +536,45 @@ See @scheme[gl-context<%>] for more information.
 
 }
 
+@defmethod[(get-initial-matrix)
+           (vector/c real? real? real? real? real? real?)]{
+
+Returns a transformation matrix that converts logical coordinates to
+ device coordinates. The matrix applies before additional origin
+ offset, scaling, and rotation.
+
+The vector content corresponds to a transformation matrix in the
+following order:
+
+@itemlist[
+
+ @item{@racket[_xx]: a scale from the logical @racket[_x] to the device @racket[_x]}
+
+ @item{@racket[_xy]: a scale from the logical @racket[_x] added to the device @racket[_y]}
+
+ @item{@racket[_yx]: a scale from the logical @racket[_y] added to the device @racket[_x]}
+
+ @item{@racket[_yy]: a scale from the logical @racket[_y] to the device @racket[_y]}
+
+ @item{@racket[_x0]: an additional amount added to the device @racket[_x]}
+
+ @item{@racket[_y0]: an additional amount added to the device @racket[_y]}
+
+]
+
+See also @method[dc<%> set-initial-matrix] and @method[dc<%> get-transformation].
+
+}
+
+
 @defmethod[(get-origin)
            (values real? real?)]{
 
 Returns the device origin, i.e., the location in device coordinates of
- @math{(0,0)} in logical coordinates.
+ @math{(0,0)} in logical coordinates. The origin offset applies after
+ the initial transformation matrix, but before scaling and rotation.
 
-See also @method[dc<%> set-origin].
+See also @method[dc<%> set-origin] and @method[dc<%> get-transformation].
 
 }
 
@@ -534,13 +586,24 @@ Gets the current pen. See also @method[dc<%> set-pen].
 
 }
 
+@defmethod[(get-rotation) real?]{
+
+Returns the rotation of logical coordinates in radians to device
+coordinates. Rotation applies after the initial transformation matrix,
+origin offset, and scaling.
+
+See also @method[dc<%> set-rotation] and @method[dc<%> get-transformation].
+
+}
+
 @defmethod[(get-scale)
            (values real? real?)]{
 
 Returns the scaling factor that maps logical coordinates to device
-coordinates.
+coordinates. Scaling applies after the initial transformation matrix
+and origin offset, but before rotation.
 
-See also @method[dc<%> set-scale].
+See also @method[dc<%> set-scale] and @method[dc<%> get-transformation].
 
 }
 
@@ -634,12 +697,36 @@ set-text-foreground].
 
 }
 
+
 @defmethod[(get-text-mode)
            (one-of/c 'solid 'transparent)]{
 Reports how text is drawn; see
-@method[dc<%> set-text-mode] .
+@method[dc<%> set-text-mode].}
 
-}
+
+@defmethod[(get-transformation)
+           (vector/c (vector/c real? real? real? real? real? real?)
+                     real? real? real? real? real?)]{
+
+Returns the current transformation setting of the drawing context in a
+form that is suitable for restoration via @method[dc<%>
+set-transformation].
+
+The vector content is as follows:
+
+@itemlist[
+
+ @item{the initial transformation matrix; see @method[dc<%>
+       get-initial-matrix];}
+
+ @item{the X and Y origin; see @method[dc<%> get-origin];}
+
+ @item{the X and Y scale; see @method[dc<%> get-origin];}
+
+ @item{a rotation; see @method[dc<%> get-rotation].}
+
+]}
+
 
 @defmethod[(glyph-exists? [c char]
                           [font (or/c (is-a?/c font%) false/c) #f])
@@ -667,29 +754,47 @@ Returns @scheme[#t] if the drawing context is usable.
 
 }
 
+
+@defmethod[(resume-flush) void?]{
+
+Calls the @xmethod[canvas<%> resume-flush] method for
+@racket[canvas<%>] output, and has no effect for other kinds of
+drawing contexts.}
+
+
+@defmethod[(rotate [angle real?]) void?]{
+
+Adds a rotation of @racket[angle] radians to the drawing context's
+current transformation.
+
+Afterward, the drawing context's transformation is represented in the
+initial transformation matrix, and the separate origin, scale, and
+rotation settings have their identity values.
+
+}
+
+@defmethod[(scale [x-scale real?]
+                  [y-scale real?])
+           void?]{
+
+Adds a scaling of @racket[x-scale] in the X-direction and
+@racket[y-scale] in the Y-direction to the drawing context's current
+transformation.
+
+Afterward, the drawing context's transformation is represented in the
+initial transformation matrix, and the separate origin, scale, and
+rotation settings have their identity values.
+
+}
+
 @defmethod[(set-alpha [opacity (real-in 0 1)])
            void?]{
 
-Determines the opacity of drawing, under certain conditions:
+Determines the opacity of drawing. A value of @scheme[0.0] corresponds
+to completely transparent (i.e., invisible) drawing, and @scheme[1.0]
+corresponds to completely opaque drawing. For intermediate values,
+drawing is blended with the existing content of the drawing context.}
 
-@itemize[
-
- @item{pen- and brush-based drawing when @method[dc<%> get-smoothing]
-       produces @scheme['smoothed] or @scheme['aligned], and when the
-       drawing context is not an instance of @scheme[post-script-dc%];
-       and}
-
- @item{text drawing for most platforms (Mac OS X, X with
-       Xft/fontconfig; transparency approximated under Windows by
-       fading the drawing color), and when the drawing context is not
-       an instance of @scheme[post-script-dc].}
-
-]
-
-A value of @scheme[0.0] corresponds to completely transparent (i.e.,
-invisible) drawing, and @scheme[1.0] corresponds to completely opaque
-drawing. For intermediate values, drawing is blended with the existing
-content of the drawing context.}
 
 @defmethod[(set-background [color (is-a?/c color%)])
            void?]{
@@ -763,17 +868,35 @@ Sets the current font for drawing text in this object.
 
 }
 
+@defmethod[(set-initial-matrix [m (vector/c real? real? real? real? real? real?)])
+           void?]{
+
+Set a transformation matrix that converts logical coordinates to
+ device coordinates. The matrix applies before additional origin
+ offset, scaling, and rotation.
+
+See @method[dc<%> get-initial-matrix] for information on the matrix as
+ represented by a vector @racket[m].
+
+See also @method[dc<%> transform], which adds a transformation to the
+ current transformation, instead of changing the transformation
+ composition in the middle.
+
+@|DrawSizeNote|
+
+}
+
 @defmethod[(set-origin [x real?]
                        [y real?])
            void?]{
 
 Sets the device origin, i.e., the location in device coordinates of
- @math{(0,0)} in logical coordinates.
+ @math{(0,0)} in logical coordinates. The origin offset applies after
+ the initial transformation matrix, but before scaling and rotation.
 
-Changing a @scheme[dc<%>] object's origin or scale does not affect
- @scheme[region%] objects that were previously created. See
-@scheme[region%] for more information.
- 
+See also @method[dc<%> translate], which adds a translation to the
+ current transformation, instead of changing the transformation
+ composition in the middle.
 
 @|DrawSizeNote|
 
@@ -807,15 +930,31 @@ While a pen is selected into a drawing context, it cannot be modified.
 
 }
 
-@defmethod[(set-scale [x-scale (and/c real? (not/c negative?))]
-                      [y-scale (and/c real? (not/c negative?))])
+@defmethod[(set-rotation [angle real?]) void?]{
+
+Set the rotation of logical coordinates in radians to device
+coordinates. Rotation applies after the initial transformation matrix,
+origin offset, and scaling.
+
+See also @method[dc<%> rotate], which adds a rotation to the current
+ transformation, instead of changing the transformation composition.
+
+@|DrawSizeNote|
+
+}
+
+@defmethod[(set-scale [x-scale real?]
+                      [y-scale real?])
            void?]{
 
-Sets a scaling factor that maps logical coordinates to device coordinates.
+Sets a scaling factor that maps logical coordinates to device
+ coordinates.  Scaling applies after the initial transformation matrix
+ and origin offset, but before rotation. Negative scaling factors have
+ the effect of flipping.
 
-Changing a @scheme[dc<%>] object's origin or scale does not affect
- @scheme[region%] objects that were previously created. See
- @scheme[region%] for more information.
+See also @method[dc<%> scale], which adds a scale to the current
+ transformation, instead of changing the transformation composition in
+ the middle.
 
 @|DrawSizeNote|
 
@@ -824,17 +963,9 @@ Changing a @scheme[dc<%>] object's origin or scale does not affect
 @defmethod[(set-smoothing [mode (one-of/c 'unsmoothed 'smoothed 'aligned)])
            void?]{
 
-Enables or disables anti-aliased smoothing of lines, curves,
- rectangles, rounded rectangles, ellipses, polygons, paths, and clear
- operations. (Text smoothing is not affected by this method, and is
- instead controlled through the @scheme[font%] object.)
-
-Smoothing is supported under Windows only when Microsoft's
- @filepath{gdiplus.dll} is installed (which is always the case for Windows
- XP). Smoothing is supported under Mac OS X always. Smoothing is
- supported under X only when Cairo is installed when GRacket is compiled.
- Smoothing is never supported for black-and-white contexts. Smoothing
- is always supported (and cannot be disabled) for PostScript output.
+Enables or disables anti-aliased smoothing for drawing. (Text
+ smoothing is not affected by this method, and is instead controlled
+ through the @scheme[font%] object.)
 
 The smoothing mode is either @scheme['unsmoothed], @scheme['smoothed],
  or @scheme['aligned]. Both @scheme['aligned] and @scheme['smoothed]
@@ -858,15 +989,6 @@ The @scheme['aligned] smoothing mode is like @scheme['smoothed], but
  through @method[dc<%> draw-rectangle], @method[dc<%> draw-ellipse],
  @method[dc<%> draw-rounded-rectangle], and @method[dc<%> draw-arc],
  the given width and height are each decreased by @math{1.0}.
-
-In either smoothing mode, brush and pen stipples are ignored (except
- for PostScript drawing), and @scheme['hilite] and @scheme['xor]
- drawing modes are treated as @scheme['solid].  If smoothing is not
- supported, then attempting to set the smoothing mode to
- @scheme['smoothed] or @scheme['aligned] will have no effect, and
- @method[dc<%> get-smoothing] will always return
- @scheme['unsmoothed]. Similarly, @method[dc<%> get-smoothing] for a
- @scheme[post-script-dc%] always returns @scheme['smoothed].
 
 }
 
@@ -913,6 +1035,16 @@ Determines how text is drawn:
 
 }
 
+
+@defmethod[(set-transformation
+            [t (vector/c (vector/c real? real? real? real? real? real?)
+                         real? real? real? real? real?)])
+           void?]{
+
+Sets the draw context's transformation. See @method[dc<%>
+get-transformation] for information about @racket[t].}
+
+
 @defmethod[(start-doc [message string?])
            boolean?]{
 
@@ -946,6 +1078,43 @@ For printer or PostScript output, an exception is raised if
  @scheme[as-eps] initialization argument for @scheme[post-script-dc%].
 
 }
+
+
+@defmethod[(suspend-flush) void?]{
+
+Calls the @xmethod[canvas<%> suspend-flush] method for
+@racket[canvas<%>] output, and has no effect for other kinds of
+drawing contexts.}
+
+
+@defmethod[(transform [m (vector/c real? real? real? real? real? real?)])
+           void?]{
+
+Adds a transformation by @racket[m] to the drawing context's current
+transformation. 
+
+See @method[dc<%> get-initial-matrix] for information on the matrix as
+ represented by a vector @racket[m].
+
+Afterward, the drawing context's transformation is represented in the
+initial transformation matrix, and the separate origin, scale, and
+rotation settings have their identity values.
+
+}
+
+@defmethod[(translate [dx real?]
+                      [dy real?])
+           void?]{
+
+Adds a scaling of @racket[dx] in the X-direction and @racket[dy] in
+the Y-direction to the drawing context's current transformation.
+
+Afterward, the drawing context's transformation is represented in the
+initial transformation matrix, and the separate origin, scale, and
+rotation settings have their identity values.
+
+}
+
 
 @defmethod[(try-color [try (is-a?/c color%)]
                       [result (is-a?/c color%)])
