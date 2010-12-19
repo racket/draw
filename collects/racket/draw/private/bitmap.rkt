@@ -190,7 +190,7 @@
     ;; Use for non-alpha color bitmaps when they are used as a mask:
     (define alpha-s #f)
     (define alpha-s-up-to-date? #f)
-    (define/private (drop-alpha-s)
+    (define/public (drop-alpha-s)
       (set! alpha-s-up-to-date? #f)
       (when alpha-s
         (let ([s2 alpha-s])
@@ -681,7 +681,8 @@
        [(and set-alpha?
              (not alpha-channel?))
         ;; Set alphas:
-        (set-alphas-as-mask x y w h bstr (* 4 w) 0)]))
+        (set-alphas-as-mask x y w h bstr (* 4 w) 0)])
+      (drop-alpha-s))
     
     (define/public (get-alphas-as-mask x y w h bstr)
       (let ([data (cairo_image_surface_get_data (if (or b&w? alpha-channel?)
@@ -766,7 +767,7 @@
                          [any? [alpha? #t]])
   (make-object bitmap% w h #f alpha?))
 
-(define/top (read-bitmap [path-string? filename]
+(define/top (read-bitmap [(make-alts path-string? input-port?) filename]
                          [bitmap-file-kind-symbol? [kind 'unknown/alpha]]
                          [(make-or-false color%) [bg-color #f]]
                          [any? [complain-on-failure? #t]])
