@@ -9,11 +9,8 @@
 
 (define-runtime-lib pango-lib 
   [(unix) (ffi-lib "libpango-1.0" '("0" ""))]
-  [(macosx) 
-   (ffi-lib "libintl.8.dylib")
-   (ffi-lib "libpango-1.0.0.dylib")]
-  [(windows) 
-   (ffi-lib "libpango-1.0-0.dll")])
+  [(macosx) (ffi-lib "libpango-1.0.0.dylib")]
+  [(windows) (ffi-lib "libpango-1.0-0.dll")])
 
 (define-runtime-lib pangowin32-lib 
   [(unix) #f]
@@ -185,6 +182,7 @@
 (define-pangocairo pango_cairo_show_layout (_pfun _cairo_t PangoLayout -> _void))
 (define-pangocairo pango_cairo_show_layout_line (_pfun _cairo_t PangoLayoutLine -> _void))
 (define-pangocairo pango_cairo_show_glyph_string (_pfun _cairo_t PangoFont _PangoGlyphString-pointer -> _void))
+(define-pangocairo pango_cairo_layout_line_path (_pfun _cairo_t PangoLayoutLine -> _void))
 
 (define-pango pango_layout_iter_free (_pfun PangoLayoutIter -> _void)
   #:wrap (deallocator))
