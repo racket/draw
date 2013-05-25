@@ -25,7 +25,7 @@ When the target bitmap for a @racket[bitmap-dc%] context is changed
 
 The @racketmodname[racket/gui/base] library provides no OpenGL
  routines. Instead, they must be obtained from a separate library,
- such as @racketmodname[sgl]. The facilities in
+ such as @racketmodname[sgl #:indirect]. The facilities in
  @racketmodname[racket/gui/base] merely manage the current OpenGL
  context, connecting it to windows and bitmaps.
 

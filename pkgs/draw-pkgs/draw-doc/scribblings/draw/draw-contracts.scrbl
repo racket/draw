@@ -1,6 +1,5 @@
 #lang scribble/doc
-@(require "common.rkt"
-          unstable/latent-contract)
+@(require "common.rkt")
 
 @title{Drawing Contracts}
 
