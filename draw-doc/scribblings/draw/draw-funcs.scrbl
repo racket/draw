@@ -100,7 +100,7 @@ To create an immutable color based on a color string, use @method[color-database
 or @racket[the-color-database].}
 
 
-@defproc[(make-font [#:size size (integer-in 1 1024) 12]
+@defproc[(make-font [#:size size (real-in 0.0 1024.0) 12]
                     [#:face face (or/c string? #f) #f]
                     [#:family family (or/c 'default 'decorative 'roman 'script 
                                            'swiss 'modern 'symbol 'system)
@@ -118,7 +118,8 @@ or @racket[the-color-database].}
 Creates a @racket[font%] instance. This procedure provides an
 equivalent but more convenient interface compared to using
 @racket[make-object] with @racket[font%].
-}
+
+@history[#:changed "1.4" @elem{Changed @racket[size] to allow non-integer and zero values.}]}
 
 
 @defproc[(make-monochrome-bitmap [width exact-positive-integer?]

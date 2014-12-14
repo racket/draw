@@ -15,7 +15,7 @@ Creates an empty font list.
 
 }
 
-@defmethod*[([(find-or-create-font [size (integer-in 1 255)]
+@defmethod*[([(find-or-create-font [size (real-in 0.0 1024.0)]
                                    [family (or/c 'default 'decorative 'roman 'script 
                                                  'swiss 'modern 'symbol 'system)]
                                    [style (or/c 'normal 'italic 'slant)]
@@ -25,7 +25,7 @@ Creates an empty font list.
                                    [size-in-pixels? any/c #f]
                                    [hinting (or/c 'aligned 'unaligned) 'aligned])
               (is-a?/c font%)]
-             [(find-or-create-font [size (integer-in 1 255)]
+             [(find-or-create-font [size (real-in 0.0 1024.0)]
                                    [face string?]
                                    [family (or/c 'default 'decorative 'roman 'script
                                                  'swiss 'modern 'symbol 'system)]
@@ -41,4 +41,4 @@ Finds an existing font in the list or creates a new one (that is
  automatically added to the list). The arguments are the same as for
  creating a @racket[font%] instance.
 
-}}
+@history[#:changed "1.4" @elem{Changed @racket[size] to allow non-integer and zero values.}]}}

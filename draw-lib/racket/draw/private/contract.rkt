@@ -133,6 +133,7 @@
     (get-font-id (->m exact-integer?))
     (get-hinting (->m font-hinting/c))
     (get-point-size (->m (integer-in 1 255)))
+    (get-size (->m (real-in 0.0 1024.0)))
     (get-size-in-pixels (->m boolean?))
     (get-smoothing (->m font-smoothing/c))
     (get-style (->m font-style/c))

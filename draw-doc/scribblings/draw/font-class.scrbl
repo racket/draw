@@ -100,7 +100,7 @@ See also
 
 
 @defconstructor*/make[(()
-                       ([size (integer-in 1 1024)]
+                       ([size (real-in 0.0 1024.0)]
                         [family font-family/c]
                         [style font-style/c 'normal]
                         [weight font-weight/c 'normal]
@@ -108,7 +108,7 @@ See also
                         [smoothing font-smoothing/c 'default]
                         [size-in-pixels? any/c #f]
                         [hinting font-hinting/c 'aligned])
-                       ([size (integer-in 1 1024)]
+                       ([size (real-in 0.0 1024.0)]
                         [face string?]
                         [family font-family/c]
                         [style font-style/c 'normal]
@@ -129,7 +129,8 @@ See @racket[font%] for information about @racket[family],
 
 See also @racket[make-font].
 
-}
+@history[#:changed "1.4" @elem{Changed @racket[size] to allow non-integer and zero values.}]}
+
 
 @defmethod[(get-face)
            (or/c string? #f)]{
@@ -164,14 +165,26 @@ hinting.
 @defmethod[(get-point-size)
            (integer-in 1 1024)]{
 
-Gets the font's size (roughly the height). Despite the method name,
- the size may be in logical units instead of points, depending on the
- result of @method[font% get-size-in-pixels].
+Gets the font's size rounded to the nearest non-zero integer. Despite
+ the method's name, the result is in either logical units or points,
+ depending on the result of @method[font% get-size-in-pixels].
+
+See @method[font% get-size], instead. The @method[font% get-point-size]
+ method is provided for backward compatibility.}
+
+
+@defmethod[(get-size)
+           (real-in 0.0 1024.0)]{
+
+Gets the font's size (roughly the height). The size is in either
+ logical units or points, depending on the result of @method[font%
+ get-size-in-pixels].
 
 Due to space included in a font by a font designer, a font tends to
  generate text that is slightly taller than the nominal size.
 
-}
+@history[#:added "1.4"]}
+
 
 @defmethod[(get-size-in-pixels)
            boolean?]{

@@ -45,9 +45,6 @@
    [attrs (pango_layout_set_attributes layout attrs)]
    [always-attrs (pango_layout_set_attributes layout always-attrs)]))
 
-(define (size? v) (and (exact-positive-integer? v)
-                       (v . <= . 1024)))
-
 (define-local-member-name s-set-table-key)
 
 (define font-descs (make-weak-hash))
@@ -198,8 +195,10 @@
   (define family 'default)
   (def/public (get-family) family)
 
-  (define size 12)
-  (def/public (get-point-size) size)
+  (define size 12.0)
+  (def/public (get-point-size) (max 1 (inexact->exact (round size))))
+  
+  (def/public (get-size) size)
 
   (define size-in-pixels? #f)
   (def/public (get-size-in-pixels) size-in-pixels?)
@@ -229,7 +228,7 @@
   (case-args 
    args
    [() (void)]
-   [([size? _size]
+   [([(real-in 0.0 1024.0) _size]
      [family-symbol? _family]
      [style-symbol? [_style 'normal]]
      [weight-symbol? [_weight 'normal]]
@@ -237,7 +236,7 @@
      [smoothing-symbol? [_smoothing 'default]]
      [any? [_size-in-pixels? #f]]
      [hinting-symbol? [_hinting 'aligned]])
-    (set! size _size)
+    (set! size (exact->inexact _size))
     (set! family _family)
     (set! style _style)
     (set! weight _weight)
@@ -245,7 +244,7 @@
     (set! smoothing _smoothing)
     (set! size-in-pixels? _size-in-pixels?)
     (set! s-hinting _hinting)]
-   [([size? _size]
+   [([(real-in 0.0 1024.0) _size]
      [(make-or-false string?) _face]
      [family-symbol? _family]
      [style-symbol? [_style 'normal]]
@@ -254,7 +253,7 @@
      [smoothing-symbol? [_smoothing 'default]]
      [any? [_size-in-pixels? #f]]
      [hinting-symbol? [_hinting 'aligned]])
-    (set! size _size)
+    (set! size (exact->inexact _size))
     (set! face (and _face (string->immutable-string _face)))
     (set! family _family)
     (set! style _style)
@@ -290,7 +289,7 @@
     (let ([key
            (case-args 
             args
-            [([size? size]
+            [([(real-in 0.0 1024.0) size]
               [family-symbol? family]
               [style-symbol? [style 'normal]]
               [weight-symbol? [weight 'normal]]
@@ -298,8 +297,8 @@
               [smoothing-symbol? [smoothing 'default]]
               [any? [size-in-pixels? #f]]
               [hinting-symbol? [hinting 'aligned]])
-             (vector size family style weight underlined? smoothing size-in-pixels? hinting)]
-            [([size? size]
+             (vector (exact->inexact size) family style weight underlined? smoothing size-in-pixels? hinting)]
+            [([(real-in 0.0 1024.0) size]
               [(make-or-false string?) face]
               [family-symbol? family]
               [style-symbol? [style 'normal]]
@@ -308,7 +307,7 @@
               [smoothing-symbol? [smoothing 'default]]
               [any? [size-in-pixels? #f]]
               [hinting-symbol? [hinting 'aligned]])
-             (vector size (and face (string->immutable-string face)) family
+             (vector (exact->inexact size) (and face (string->immutable-string face)) family
                      style weight underlined? smoothing size-in-pixels? hinting)]
             (method-name 'find-or-create-font 'font-list%))])
       (atomically
@@ -344,7 +343,7 @@
              (pango_font_face_get_face_name face))))))
    string<?))
 
-(define (make-font #:size [size 12]
+(define (make-font #:size [size 12.0]
                    #:face [face #f]
                    #:family [family 'default]
                    #:style [style 'normal]
@@ -353,7 +352,7 @@
                    #:smoothing [smoothing 'default]
                    #:size-in-pixels? [size-in-pixels? #f]
                    #:hinting [hinting 'aligned])
-  (unless (size? size) (raise-type-error 'make-font "exact integer in [1, 1024]" size))
+  (unless (and (real? size) (<= 0.0 size 1024.0)) (raise-type-error 'make-font "real number in [0.0, 1024.0]" size))
   (unless (or (not face) (string? face)) (raise-type-error 'make-font "string or #f" face))
   (unless (family-symbol? family) (raise-type-error 'make-font "family-symbol" family))
   (unless (style-symbol? style) (raise-type-error 'make-font "style-symbol" style))
