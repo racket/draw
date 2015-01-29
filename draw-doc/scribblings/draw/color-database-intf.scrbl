@@ -6,7 +6,7 @@
 The global @indexed-racket[the-color-database] object is an instance of
  @racket[color-database<%>]. It maintains a database of standard RGB
  colors for a predefined set of named colors (such as ``black'' and
- ``light grey'').
+ ``light gray'').
 
 The following colors are in the database:
 
