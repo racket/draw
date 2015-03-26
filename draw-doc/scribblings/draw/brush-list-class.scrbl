@@ -17,7 +17,7 @@ Creates an empty brush list.
 
 }
 
-@defmethod*[([(find-or-create-brush [color (is-a?/c color%)]
+@defmethod*[([(find-or-create-brush [color (or/c string? (is-a?/c color%))]
                                     [style (or/c 'transparent 'solid 'opaque
                                                  'xor 'hilite 'panel 
                                                  'bdiagonal-hatch 'crossdiag-hatch 
