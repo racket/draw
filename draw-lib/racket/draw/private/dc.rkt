@@ -1977,7 +1977,8 @@
       (or (with-cr
            10.0
            cr
-           (get-font-metric cr pango_font_metrics_get_approximate_char_width))
+           (get-font-metric cr pango_font_metrics_get_approximate_char_width
+                            (lambda (sw sh) sw)))
           (let-values ([(w h d a) (get-text-extent "X")])
             w)))
 
@@ -1987,11 +1988,12 @@
            cr
            (get-font-metric cr (lambda (m)
                                  (+ (pango_font_metrics_get_ascent m)
-                                    (pango_font_metrics_get_descent m)))))
+                                    (pango_font_metrics_get_descent m)))
+                            (lambda (sw sh) sh)))
           (let-values ([(w h d a) (get-text-extent "X")])
             h)))
 
-    (define/private (get-font-metric cr sel)
+    (define/private (get-font-metric cr sel s-sel)
       (let* ([desc (get-pango font)]
 	     [attrs (send font get-pango-attrs)]
 	     [index (get-smoothing-index font)]
@@ -1999,10 +2001,27 @@
 	     [fontmap (get-font-map index current-xform)]
 	     [font (pango_font_map_load_font fontmap context desc)])
           (and font ;; else font match failed
-               (let ([metrics (pango_font_get_metrics font (pango_language_get_default))])
+               (let ([metrics (pango_font_get_metrics font (pango_language_get_default))]
+                     [mx (make-cairo_matrix_t 1 0 0 1 0 0)])
+                 (case (system-type)
+                   [(windows)
+                    ;; Pango metrics are ok:
+                    (void)]
+                   [(macosx)
+                    ;; Pango metrics don't compenstate for the scale for width,
+                    ;; and they compensate backwards(!) for height:
+                    (init-effective-matrix mx)
+                    (set-cairo_matrix_t-yy! mx (/ (cairo_matrix_t-yy mx)))]
+                   [else
+                    ;; Pango metrics don't compenstate for the scale for width,
+                    ;; but they do for height:
+                    (init-effective-matrix mx)
+                    (set-cairo_matrix_t-yy! mx 1.0)])
                  (let ([v (sel metrics)])
                    (pango_font_metrics_unref metrics)
-                   (/ v (exact->inexact PANGO_SCALE)))))))
+                   (/ v (* (exact->inexact PANGO_SCALE)
+                           (s-sel (cairo_matrix_t-xx mx)
+                                  (cairo_matrix_t-yy mx)))))))))
 
     (void))
 
