@@ -160,5 +160,20 @@ Adjusts the configuration to request legacy or not.
 @history[#:added "1.2"]
 }
 
+@defmethod[(get-hires-mode)
+           boolean?]{
+
+Determines whether to use hires mode. On OS X, this means that the
+created OpenGL contexts will have access to the full Retina resolution
+and will not be scaled by the drawing system. On other platforms, it
+means nothing.
+@history[#:added "1.5"]
+}
+@defmethod[(set-hires-mode [hires-mode any/c])
+           void?]{
+
+Adjusts the configuration to request hires mode or not.
+@history[#:added "1.5"]
+}
 
 }

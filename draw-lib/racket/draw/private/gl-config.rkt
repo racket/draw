@@ -7,6 +7,10 @@
 (defclass gl-config% object%
   (super-new)
 
+  (define hires-mode #f)
+  (define/public (get-hires-mode) hires-mode)
+  (define/public (set-hires-mode v) (set! hires-mode (and v #t)))
+
   (define legacy? #t)
   (define/public (get-legacy?) legacy?)
   (define/public (set-legacy? v) (set! legacy? (and v #t)))
