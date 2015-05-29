@@ -2029,11 +2029,17 @@
 
 (set-text-to-path!
  (lambda (font str x y combine?)
-   (define tmp-bm (make-object bitmap% 10 10))
-   (define tmp-dc (make-object -bitmap-dc% tmp-bm))
+   (define s (cairo_recording_surface_create CAIRO_CONTENT_COLOR_ALPHA #f))
+   (define cr (cairo_create s))
+   (cairo_surface_destroy s)
+   (define tmp-dc
+     (make-object (dc-mixin
+                   (class default-dc-backend%
+                     (super-new)
+                     (define/override (get-cr) cr)))))
    (send tmp-dc set-font font)
    (define path (send tmp-dc text-path str x y combine?))
    (begin0
     (cairo-path->list path)
-    (cairo_path_destroy path))))
-
+    (cairo_path_destroy path)
+    (cairo_destroy cr))))

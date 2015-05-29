@@ -177,6 +177,10 @@
                                           -> _void
                                           -> (values x1 y1 x2 y2)))
 
+(define-cairo cairo_recording_surface_create
+  (_cfun _int _cairo_rectangle_t-pointer/null -> _cairo_surface_t)
+  #:wrap (allocator cairo_surface_destroy))
+
 ;; Transforms
 (define-cairo cairo_translate (_cfun _cairo_t _double* _double* -> _void))
 (define-cairo cairo_scale (_cfun _cairo_t _double* _double* -> _void))
