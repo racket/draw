@@ -2030,16 +2030,29 @@
 (set-text-to-path!
  (lambda (font str x y combine?)
    (define s (cairo_recording_surface_create CAIRO_CONTENT_COLOR_ALPHA #f))
-   (define cr (cairo_create s))
-   (cairo_surface_destroy s)
-   (define tmp-dc
-     (make-object (dc-mixin
-                   (class default-dc-backend%
-                     (super-new)
-                     (define/override (get-cr) cr)))))
-   (send tmp-dc set-font font)
-   (define path (send tmp-dc text-path str x y combine?))
-   (begin0
-    (cairo-path->list path)
-    (cairo_path_destroy path)
-    (cairo_destroy cr))))
+   (define (get-path tmp-dc)
+     (send tmp-dc set-font font)
+     (define path (send tmp-dc text-path str x y combine?))
+     (begin0
+      (cairo-path->list path)
+      (cairo_path_destroy path)))
+   (cond
+    [s
+     (define cr (cairo_create s))
+     (cairo_surface_destroy s)
+     (define tmp-dc
+       (make-object (dc-mixin
+                     (class default-dc-backend%
+                       (super-new)
+                       (define/override (get-cr) cr)))))
+     (begin0
+      (get-path tmp-dc)
+      (cairo_destroy cr))]
+    [else
+     ;; If a recording surface is not available, fall back to using a
+     ;; bitmap, but we need one that's large enough
+     (define meas-bm (make-object bitmap% 10 10))
+     (define meas-dc (make-object -bitmap-dc% meas-bm))
+     (define-values (w h d a) (send meas-dc get-text-extent str font combine?))
+     (define tmp-bm (make-object bitmap% (inexact->exact (ceiling w)) (inexact->exact (ceiling h))))
+     (get-path (make-object -bitmap-dc% tmp-bm))])))

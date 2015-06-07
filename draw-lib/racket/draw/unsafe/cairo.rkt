@@ -179,7 +179,8 @@
 
 (define-cairo cairo_recording_surface_create
   (_cfun _int _cairo_rectangle_t-pointer/null -> _cairo_surface_t)
-  #:wrap (allocator cairo_surface_destroy))
+  #:wrap (allocator cairo_surface_destroy)
+  #:fail (lambda () (lambda (kind rect) #f)))
 
 ;; Transforms
 (define-cairo cairo_translate (_cfun _cairo_t _double* _double* -> _void))
