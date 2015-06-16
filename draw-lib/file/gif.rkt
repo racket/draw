@@ -38,15 +38,18 @@
 
 (define (image-ready-gif-stream? g)
   (and (gif-stream? g)
-       (memq (gif-stream-FileState g) '(init image-or-control image))))
+       (memq (gif-stream-FileState g) '(init image-or-control image))
+       #t))
 
 (define (image-or-control-ready-gif-stream? g)
   (and (gif-stream? g)
-       (memq (gif-stream-FileState g) '(init image-or-control))))
+       (memq (gif-stream-FileState g) '(init image-or-control))
+       #t))
 
 (define (empty-gif-stream? g)
   (and (gif-stream? g)
-       (memq (gif-stream-FileState g) '(init))))
+       (memq (gif-stream-FileState g) '(init))
+       #t))
 
 (define color? byte?)
 (define (dimension? x) (and (exact? x) (integer? x) (<= 0 x #xFFFF)))
