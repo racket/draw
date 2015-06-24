@@ -47,11 +47,12 @@
 ;; Cairo is supposed to be thread-safe, but concurrent use seems
 ;; to cause trouble right now. (Try rendering the "plot" document
 ;; in multiple places at once.) For now, treat Cairo as non-thread
-;; safe. Use `_cfun' for Cairo functions and `_cbfun' for callbacks:
+;; safe, and use the same lock with Pango (since it calls Cairo).
+;; Use `_cfun' for Cairo functions and `_cbfun' for callbacks:
 (define-syntax-rule (_cfun . rest)
-  (_fun #:in-original-place? #t . rest))
+  (_fun #:lock-name "cairo-pango-lock" . rest))
 (define-syntax-rule (_cbfun . rest)
-  (_fun #:async-apply (lambda (f) (f)) . rest))
+  (_fun #:atomic? #t . rest))
 
 (define-cairo cairo_destroy (_cfun _cairo_t -> _void) 
   #:wrap (deallocator))
@@ -324,7 +325,7 @@
 ;;  Externally, a stream-creation function takes
 ;;  just a closure --- not a function and data.
 (define _cairo_write_func_t 
-  (_cbfun #:atomic? #t _pointer _pointer _uint -> _int))
+  (_cbfun _pointer _pointer _uint -> _int))
 (define _stream-surface-proc 
   (_cfun _cairo_write_func_t _pointer _double* _double* -> _cairo_surface_t))
 (define cell-key (malloc 1 'raw))
@@ -353,8 +354,7 @@
 (define current-sud-box (make-parameter #f))
 (define-cairo cairo_surface_set_user_data 
   (_cfun _cairo_surface_t _pointer _pointer 
-        (_cbfun #:atomic? #t 
-                #:keep (lambda (v) (set-box! (current-sud-box) v))
+        (_cbfun #:keep (lambda (v) (set-box! (current-sud-box) v))
                 _pointer -> _void)
         -> _int))
 

@@ -121,13 +121,14 @@
 (provide (struct-out PangoGlyphItem))
 
 ;; As of Pango 1.28, Pango is not thread-safe at the C level, which
-;; means that it isn't place-safe in Racket. Also, for some reason,
-;; when parts of Pango are initialized in a non-main place under
-;; Windows, then font operations start to fail when that place exits.
-;; Run all Pango calls in the original place, which synchronizes them
-;; and avoids Windows problems.
+;; means that it isn't place-safe in Racket. Use the same lock as
+;; for Cairo, since Pango calls Cairo.
+;; [At some point, it seemes that when parts of Pango are initialized
+;; in a non-main place under Windows, then font operations start to
+;; fail when that place exits. If that still seems to be a problem,
+;; then we'll need to add `#:in-original-place? #t` for Windows.]
 (define-syntax-rule (_pfun spec ...)
-  (_fun #:in-original-place? #t spec ...))
+  (_fun #:lock-name "cairo-pango-lock" spec ...))
 
 (provide g_object_unref g_free)
 (define-gobj g_object_unref (_pfun _pointer -> _void)
