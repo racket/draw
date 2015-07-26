@@ -687,7 +687,7 @@
                      (jpeg_finish_compress c))
                    (lambda () (destroy-compress c))))]
             [else (error (method-name 'bitmap% 'save-file)
-                         "kind saving not yet implemented: ~e"
+                         "saving not implemented for file kind: ~e"
                          kind)])))
 
     (def/public (ok?) (and s #t))
