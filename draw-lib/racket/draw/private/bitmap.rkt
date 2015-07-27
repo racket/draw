@@ -391,7 +391,12 @@
                [(starts? #"GIF8")
                 (do-load-bitmap in 'gif bg complain-on-failure?)]
                [(starts? #"BM")
-                (do-load-bitmap in 'bmp bg complain-on-failure?)]
+                (do-load-bitmap in
+                                (if (eq? kind 'unknown/alpha)
+                                    'bmp/alpha
+                                    'bmp)
+                                bg
+                                complain-on-failure?)]
                [(starts? #"#define")
                 (do-load-bitmap in 'xbm bg complain-on-failure?)]
                [(starts? #"/* XPM */")
@@ -486,7 +491,12 @@
                     (values s #f))
                   (values #f #f)))]
            [(bmp bmp/alpha)
-            (let-values ([(w h rows) (read-bmp in)])
+            (let-values ([(w h rows) (read-bmp in #:background (and (eq? kind 'bmp)
+                                                                    (if bg
+                                                                        (list (color-red bg)
+                                                                              (color-green bg)
+                                                                              (color-blue bg))
+                                                                        (list 255 255 255))))])
               (if rows
                   (let ([s (cairo_image_surface_create CAIRO_FORMAT_ARGB32 w h)]
                         [alpha? #t])
@@ -686,6 +696,17 @@
                            (jpeg_write_scanlines c samps 1))))
                      (jpeg_finish_compress c))
                    (lambda () (destroy-compress c))))]
+            [(bmp)
+             (define bstr (make-bytes (* width height 4)))
+             (get-argb-pixels 0 0 width height bstr #:unscaled? #t)
+             (when loaded-mask
+               (send loaded-mask get-argb-pixels 0 0 width height bstr #t))
+             (define write-bmp
+               (cond
+                [b&w? write-bmp1]
+                [(or alpha-channel? loaded-mask) write-bmp32]
+                [else write-bmp24]))
+             (write-bmp bstr width height out)]
             [else (error (method-name 'bitmap% 'save-file)
                          "saving not implemented for file kind: ~e"
                          kind)])))

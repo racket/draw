@@ -251,7 +251,7 @@ The @racket[kind] argument specifies the file's format:
 @item{@racket['xpm] --- load an @as-index{XPM} bitmap file, creating a color
   bitmap}
 @item{@racket['xpm/alpha] --- like @racket['xpm], but with an alpha channel}
-@item{@racket['bmp] --- load a Windows bitmap file, creating a color bitmap}
+@item{@racket['bmp] --- load a Windows bitmap (BMP) file, creating a color bitmap}
 @item{@racket['bmp/alpha] --- like @racket['bmp], but with an alpha channel}
 ]
 
@@ -260,7 +260,7 @@ An XBM image is always loaded as a monochrome bitmap. A 1-bit
  monochrome bitmap. An image in any other format is always loaded as a
  color bitmap.
 
-For PNG loading, if @racket[bg-color] is not @racket[#f], then it is
+For PNG and BMP loading, if @racket[bg-color] is not @racket[#f], then it is
  combined with the file's alpha channel or mask (if any) while loading
  the image; in this case, no separate mask bitmap is generated and the
  alpha channel fills the bitmap, even if @racket['unknown/mask],
