@@ -89,5 +89,9 @@
 	     '(1 1/2 3/2)))
  '(solid opaque xor))
 
+(module+ main
+  (send ok-frame show #t))
 
-(send ok-frame show #t)
+(module+ test
+  (send ok-frame show #t)
+  (send ok-frame show #f))
