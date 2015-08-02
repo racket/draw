@@ -756,13 +756,13 @@ Different kinds of bitmaps can produce different results:
        @racket[canvas%] instance. A bitmap produced by
        @racket[make-screen-bitmap] uses the same platform-specific
        drawing as @racket[make-platform-bitmap] on Windows or Mac OS
-       X, but possibly scaled, and it may be sensitive to the X11
+       X, but possibly scaled, and it may be scaled or sensitive to the X11
        server on Unix.
  
        On Mac OS X, when the main screen is in Retina mode (at the
        time that the bitmap is created), the bitmap is also internally
        scaled so that one drawing unit uses two pixels. Similarly, on
-       Windows, when the main display's text scale is configured at
+       Windows or Unix, when the main display's text scale is configured at
        the operating-system level (see @secref[#:doc '(lib
        "scribblings/gui/gui.scrbl") "display-resolution"]), the bitmap
        is internally scaled, where common configurations map a drawing
