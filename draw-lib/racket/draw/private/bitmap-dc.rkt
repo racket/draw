@@ -19,6 +19,8 @@
     (define c #f)
     (define bm #f)
     (define b&w? #f)
+
+    (super-new)
     
     (when _bm
       (do-set-bitmap _bm #f)
@@ -101,9 +103,7 @@
     (define/override (get-clear-operator)
       (if (or b&w? (send bm has-alpha-channel?))
           CAIRO_OPERATOR_CLEAR
-          CAIRO_OPERATOR_OVER))
-
-    (super-new)))
+          CAIRO_OPERATOR_OVER))))
 
 (define black (send the-color-database find-color "black"))
 
@@ -120,8 +120,6 @@
              scale
              get-font)
     
-    (super-new)
-
     (def/override (get-gl-context)
       (let ([bm (internal-get-bitmap)])
         (and bm
@@ -197,6 +195,8 @@
                       (set! temp-dc (make-weak-box dc))
                       dc))])
         (send dc set-font (get-font))
-        dc))))
+        dc))
+    
+    (super-new)))
 
 (install-bitmap-dc-class! bitmap-dc%)

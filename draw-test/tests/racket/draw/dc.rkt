@@ -911,6 +911,8 @@
 (test #f 'undef-pen (impersonator? (new pen%)))
 (test #f 'undef-brush (impersonator? (new brush%)))
 (test #f 'undef-color (impersonator? (new color%)))
+(test #f 'undef-bitmap (impersonator? (make-object bitmap% 10 10)))
+(test #f 'undef-bitmap-dc (impersonator? (new bitmap-dc%)))
 
 ;; ----------------------------------------
 

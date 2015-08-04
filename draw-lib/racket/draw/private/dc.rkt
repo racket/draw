@@ -44,6 +44,9 @@
           black)
       (color->immutable-color c)))
 
+(define (bounding-box-type? o)
+  (member o '(path fill stroke)))
+
 ;; dc-backend : interface
 ;;
 ;; This is the interface that the backend specific code must implement
@@ -256,8 +259,6 @@
 
 (define (dc-mixin backend%)
   (defclass* dc% backend% (dc<%>)
-    (super-new)
-
     (inherit flush-cr get-cr release-cr end-cr init-cr-matrix init-effective-matrix
 	     get-pango
              install-color dc-adjust-smoothing get-hairline-width dc-adjust-cap-shape
@@ -589,7 +590,7 @@
 
     (define current-smoothing #f)
 
-    (define (set-font-antialias context smoothing hinting)
+    (define/private (set-font-antialias context smoothing hinting)
       (let ([o (pango_cairo_context_get_font_options context)]
             [o2 (cairo_font_options_create)])
         (when o
@@ -1171,8 +1172,6 @@
            (rounded-rect x y (sub1w width) (sub1h height)
                          (lambda (x) (align-x x)) (lambda (y) (align-y y)))
            (draw cr #f #t)))))
-    
-    (define (bounding-box-type? o) (member o '(path fill stroke)))
     
     (def/public (get-path-bounding-box [dc-path% path] [bounding-box-type? type])
       (with-cr
@@ -2023,7 +2022,7 @@
                            (s-sel (cairo_matrix_t-xx mx)
                                   (cairo_matrix_t-yy mx)))))))))
 
-    (void))
+    (super-new))
 
   dc%)
 

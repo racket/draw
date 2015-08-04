@@ -171,12 +171,26 @@
     ;;    is used as a mask
 
     (init-rest args)
-    (super-new)
 
     (define/public (surface-flush)
       (cairo_surface_flush s))
+    
+    (define alt? #f)
+    (define width 0)
+    (define height 0)
+    (define b&w? #f)
+    (define alpha-channel? #f)
+    (define s #f)
+    (define loaded-mask #f)
+    (define backing-scale 1.0)
+    (define shadow #f)
 
-    (define-values (alt? width height b&w? alpha-channel? s loaded-mask backing-scale)
+    (define alpha-s #f)
+    (define alpha-s-up-to-date? #f)
+
+    (super-new)
+
+    (set!-values (alt? width height b&w? alpha-channel? s loaded-mask backing-scale)
       (case-args
        args
        [([alternate-bitmap-kind? a])
@@ -293,19 +307,17 @@
                    "bitmap with mask")
                backing-scale)))
 
+    ;; Claim memory proportional to the size of the bitmap, which
+    ;; helps the GC see that we're using that much memory:
+    (set! shadow (make-phantom-bytes (* width height 4)))
+
     ;; Use for non-alpha color bitmaps when they are used as a mask:
-    (define alpha-s #f)
-    (define alpha-s-up-to-date? #f)
     (define/public (drop-alpha-s)
       (set! alpha-s-up-to-date? #f)
       (when alpha-s
         (let ([s2 alpha-s])
           (set! alpha-s #f)
           (destroy s2))))
-
-    ;; Claim memory proportional to the size of the bitmap, which
-    ;; helps the GC see that we're using that much memory:
-    (define shadow (make-phantom-bytes (* width height 4)))
 
     (def/public (get-width) (max 1 width))
     (def/public (get-height) (max 1 height))
@@ -952,7 +964,7 @@
           (cairo_surface_mark_dirty alpha-s)
           (set! alpha-s-up-to-date? #t))))
 
-    (define/public (transparent-white! s width height)
+    (define/private (transparent-white! s width height)
       (let ([bstr (cairo_image_surface_get_data s)]
             [row-width (cairo_image_surface_get_stride s)]
             [A (a-index)])
