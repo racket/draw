@@ -151,6 +151,8 @@
 (define-pangocairo pango_cairo_font_map_get_default (_pfun -> PangoFontMap)) ;; not an allocator
 (define-pangocairo pango_cairo_font_map_new (_pfun -> PangoFontMap)
   #:wrap (allocator g_object_unref))
+(define-pangocairo pango_cairo_font_map_get_resolution (_pfun PangoFontMap -> _double)
+  #:fail (lambda () (lambda (fm) 96.0)))
 
 (define-pango pango_context_new (_pfun -> PangoContext)
   #:wrap (allocator g_object_unref))
