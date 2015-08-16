@@ -11,6 +11,7 @@
 
 (provide _cairo_t
          _cairo_surface_t
+	 _cairo_pattern_t
          _cairo_font_options_t)
 
 ;; ALLOCATION NOTE: drawing to a Cairo surface might call back to
