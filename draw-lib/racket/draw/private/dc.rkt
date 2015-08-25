@@ -7,7 +7,6 @@
          ffi/unsafe/atomic
          racket/math
          racket/class
-         (only-in racket/contract/base or/c)
          "local.rkt"
          "../unsafe/cairo.rkt"
          "../unsafe/pango.rkt"
@@ -22,8 +21,7 @@
          "dc-path.rkt"
          "point.rkt"
          "transform.rkt"
-         "local.rkt"
-         "arrow-util.rkt")
+         "local.rkt")
 
 (provide dc-mixin
          dc-backend<%>
@@ -2023,100 +2021,6 @@
                    (/ v (* (exact->inexact PANGO_SCALE)
                            (s-sel (cairo_matrix_t-xx mx)
                                   (cairo_matrix_t-yy mx)))))))))
-
-    ;; draw one arrow
-    (def/public (draw-arrow [real? uncropped-pre-start-x]
-                            [real? uncropped-pre-start-y]
-                            [real? uncropped-pre-end-x]
-                            [real? uncropped-pre-end-y]
-                            [real? dx]
-                            [real? dy]
-                            #:pen-width [(or/c real? #f) (pen-width #f)]
-                            #:arrow-head-size [real? (arrow-head-size 8)]
-                            #:arrow-root-radius [real? (arrow-root-radius 2.5)])
-
-      (define arrow-head-angle (/ pi 8))
-      (define cos-arrow-head-angle (cos arrow-head-angle))
-      (define sin-arrow-head-angle (sin arrow-head-angle))
-
-      ;; If alpha is the angle between the x axis and the Start->End vector:
-      ;;
-      ;; p2-x = end-x + arrow-head-size * cos(alpha + pi - arrow-head-angle)
-      ;;      = end-x - arrow-head-size * cos(alpha - arrow-head-angle)
-      ;;      = end-x - arrow-head-size * (cos(alpha) * cos(arrow-head-angle) + sin(alpha) * sin(arrow-head-angle))
-      ;;      = end-x - arrow-head-size-cos-arrow-head-angle * cos-alpha - arrow-head-size-sin-arrow-head-angle * sin-alpha
-      ;;      = end-x - arrow-head-size-cos-arrow-head-angle-cos-alpha - arrow-head-size-sin-arrow-head-angle-sin-alpha
-      ;;
-      ;; p2-y = end-y + arrow-head-size * sin(alpha + pi - arrow-head-angle)
-      ;;      = end-y - arrow-head-size * sin(alpha - arrow-head-angle)
-      ;;      = end-y - arrow-head-size * (sin(alpha) * cos(arrow-head-angle) - cos(alpha) * sin(arrow-head-angle))
-      ;;      = end-y - arrow-head-size-cos-arrow-head-angle * sin-alpha + arrow-head-size-sin-arrow-head-angle * cos-alpha
-      ;;      = end-y - arrow-head-size-cos-arrow-head-angle-sin-alpha + arrow-head-size-sin-arrow-head-angle-cos-alpha
-      ;;
-      ;; p3-x = end-x + arrow-head-size * cos(alpha + pi + arrow-head-angle)
-      ;;      = end-x - arrow-head-size * cos(alpha + arrow-head-angle)
-      ;;      = end-x - arrow-head-size * (cos(alpha) * cos(arrow-head-angle) - sin(alpha) * sin(arrow-head-angle))
-      ;;      = end-x - arrow-head-size-cos-arrow-head-angle * cos-alpha + arrow-head-size-sin-arrow-head-angle * sin-alpha
-      ;;      = end-x - arrow-head-size-cos-arrow-head-angle-cos-alpha + arrow-head-size-sin-arrow-head-angle-sin-alpha
-      ;;
-      ;; p3-y = end-y + arrow-head-size * sin(alpha + pi + arrow-head-angle)
-      ;;      = end-y - arrow-head-size * sin(alpha + arrow-head-angle)
-      ;;      = end-y - arrow-head-size * (sin(alpha) * cos(arrow-head-angle) + cos(alpha) * sin(arrow-head-angle))
-      ;;      = end-y - arrow-head-size-cos-arrow-head-angle * sin-alpha - arrow-head-size-sin-arrow-head-angle * cos-alpha
-      ;;      = end-y - arrow-head-size-cos-arrow-head-angle-sin-alpha - arrow-head-size-sin-arrow-head-angle-cos-alpha
-
-      (define arrow-head-size-cos-arrow-head-angle (* arrow-head-size cos-arrow-head-angle))
-      (define arrow-head-size-sin-arrow-head-angle (* arrow-head-size sin-arrow-head-angle))
-
-      (define arrow-root-diameter (* 2 arrow-root-radius))
-      (define the-pen-width (or pen-width (send (get-pen) get-width)))
-      (let ([uncropped-start-x (+ uncropped-pre-start-x dx (- (/ the-pen-width 2)))]
-            [uncropped-start-y (+ uncropped-pre-start-y dy)]
-            [uncropped-end-x (+ uncropped-pre-end-x dx (- (/ the-pen-width 2)))]
-            [uncropped-end-y (+ uncropped-pre-end-y dy)]
-            [old-smoothed (get-smoothing)])
-        (let*-values ([(start-x start-y) (crop-to uncropped-start-x uncropped-start-y uncropped-end-x uncropped-end-y)]
-                      [(end-x end-y) (crop-to uncropped-end-x uncropped-end-y uncropped-start-x uncropped-start-y)])
-          (set-smoothing 'aligned)
-          (define saved-pen (get-pen))
-          (when pen-width
-            (set-pen
-             (let ([p (get-pen)])
-               (send the-pen-list find-or-create-pen
-                     (send p get-color)
-                     pen-width
-                     (send p get-style)
-                     (send p get-cap)
-                     (send p get-join)))))
-          (draw-line start-x start-y end-x end-y)
-          (set-pen saved-pen)
-          (when (and (< smallest start-x largest)
-                     (< smallest start-y largest))
-            (draw-ellipse
-             (- start-x arrow-root-radius) (- start-y arrow-root-radius)
-             arrow-root-diameter arrow-root-diameter))
-          (when (and (< smallest end-x largest)
-                     (< smallest end-y largest))
-            (unless (and (= start-x end-x) (= start-y end-y))
-              (let* ([offset-x (- end-x start-x)]
-                     [offset-y (- end-y start-y)]
-                     [arrow-length (sqrt (+ (* offset-x offset-x) (* offset-y offset-y)))]
-                     [cos-alpha (/ offset-x arrow-length)]
-                     [sin-alpha (/ offset-y arrow-length)]
-                     [arrow-head-size-cos-arrow-head-angle-cos-alpha (* arrow-head-size-cos-arrow-head-angle cos-alpha)]
-                     [arrow-head-size-cos-arrow-head-angle-sin-alpha (* arrow-head-size-cos-arrow-head-angle sin-alpha)]
-                     [arrow-head-size-sin-arrow-head-angle-cos-alpha (* arrow-head-size-sin-arrow-head-angle cos-alpha)]
-                     [arrow-head-size-sin-arrow-head-angle-sin-alpha (* arrow-head-size-sin-arrow-head-angle sin-alpha)]
-                                        ; pt1 is the tip of the arrow, pt2 is the first point going clockwise from pt1
-                     [pt1 (make-object point% end-x end-y)]
-                     [pt2 (make-object point%
-                                       (- end-x arrow-head-size-cos-arrow-head-angle-cos-alpha arrow-head-size-sin-arrow-head-angle-sin-alpha)
-                                       (+ end-y (- arrow-head-size-cos-arrow-head-angle-sin-alpha) arrow-head-size-sin-arrow-head-angle-cos-alpha))]
-                     [pt3 (make-object point%
-                                       (+ end-x (- arrow-head-size-cos-arrow-head-angle-cos-alpha) arrow-head-size-sin-arrow-head-angle-sin-alpha)
-                                       (- end-y arrow-head-size-cos-arrow-head-angle-sin-alpha arrow-head-size-sin-arrow-head-angle-cos-alpha))])
-                (draw-polygon (list pt1 pt2 pt3)))))
-          (set-smoothing old-smoothed))))
 
     (super-new))
 
