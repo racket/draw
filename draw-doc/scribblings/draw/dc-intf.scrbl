@@ -81,22 +81,6 @@ The wedge and arc meet so that no space is left between them, but the
 
 }
 
-@defmethod[(draw-arrow [start-x real?]
-                       [start-y real?]
-                       [end-x real?]
-                       [end-y real?]
-                       [dx real?]
-                       [dy real?]
-                       [#:pen-width pen-width (or/c real? #f) #f]
-                       [#:arrow-head-size arrow-head-size real? 8]
-                       [#:arrow-root-radius arrow-root-radius real? 2.5])
-           void?]{
-Draws an arrow from (@racket[start-x], @racket[start-y]) to (@racket[end-x],
-@racket[end-y]). (@racket[dx], @racket[dy]) is the top-left location for
-drawing.
-If @racket[pen-width] is @racket[#f], the current pen width is usesd.
-}
-
 
 @defmethod[(draw-bitmap [source (is-a?/c bitmap%)]
                         [dest-x real?]
