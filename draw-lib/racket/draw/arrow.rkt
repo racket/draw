@@ -189,7 +189,9 @@
 ;; localled defined test code....
 ;; use module language to run tests
 (module+ test
-  (require rackunit)
+  (define-syntax-rule (check-equal? x y)
+    (unless (equal? x y)
+      (error (format "test failed: ~a" 'x))))
   (check-equal? (find-intersection 0 1 0 10 0 2 0 20) #f)
   (check-equal? (find-intersection 0 1 0 10 0 0 10 10) (cons 0 0))
   (check-equal? (find-intersection 0 0 10 10 0 1 0 10) (cons 0 0))
