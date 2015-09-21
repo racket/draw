@@ -144,6 +144,28 @@ For curves within the path, the bounding box enclosed the two control
 
 }
 
+
+@defmethod[(get-datum) (values (listof (listof vector?)) (listof vector?))]{
+
+Returns a representation of the path as lists of vectors. The first
+result is a list that contains a list for each @tech{closed sub-path},
+and the second result is a list for the @tech{open sub-path}. The
+second result is the empty list if the path has no @tech{open
+sub-path}.
+
+Each list representing a sub-path starts with a vector of two numbers
+that represent the starting point for the path. Each subsequent
+element is either a vector of two numbers, which represents a line
+connecting the previous point to the new one, or a vector of six
+numbers, which represents a curve connecting the previous point to a
+new point; in the latter case, the fifth and six numbers in the vector
+represent the ending point of the curve, the first and second numbers
+represent the first control point of the curve, and the third and
+fourth numbers represent the second control point of the curve.
+
+@history[#:added "1.8"]}
+
+
 @defmethod[(line-to [x real?]
                     [y real?])
            void?]{

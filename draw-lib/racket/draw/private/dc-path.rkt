@@ -107,6 +107,30 @@
         (cairo_close_path cr))
       (do-points cr open-points align-x align-y))
 
+    (define/public (get-datum)
+      (flatten-closed!)
+      (flatten-open!)
+      (define (points->datum l)
+        (let loop ([l l])
+          (cond
+           [(null? l) null]
+           [else
+            (let ([p (car l)])
+              (if (pair? p)
+                  (cons
+                   (vector (car p) (cdr p))
+                   (loop (cdr l)))
+                  (let ([p2 (cadr l)])
+                    (cons
+                     (vector (vector-ref p 0) (vector-ref p 1)
+                             (vector-ref p 2) (vector-ref p 3)
+                             (car p2) (cdr p2))
+                     (loop (cddr l))))))])))
+      (values
+       (for/list ([cp (in-list closed-points)])
+         (points->datum cp))
+       (points->datum open-points)))
+
     (define/public (append path)
       (flatten-closed!)
       (flatten-open!)
