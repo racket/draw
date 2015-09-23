@@ -41,6 +41,26 @@ Reports whether the configuration requests double buffering or not.
 
 }
 
+@defmethod[(get-hires-mode)
+           boolean?]{
+
+Determines whether to use hires mode. On Mac OS X, hires mode means that the
+created OpenGL contexts will have access to the full Retina resolution
+and will not be scaled by the drawing system. On other platforms, hires mode
+has no effect.
+
+@history[#:added "1.5"]}
+
+
+@defmethod[(get-legacy?)
+           boolean?]{
+
+Determines whether to use legacy ``Compatibility'' OpenGL or ``Core'' OpenGL.
+Core OpenGL profiles are currently supported on Mac OS X (version 10.7 and up)
+and Linux (if the graphics drivers support them).
+
+@history[#:added "1.2"]}
+
 @defmethod[(get-multisample-size)
            (integer-in 0 256)]{
 
@@ -100,6 +120,23 @@ Adjusts the configuration to request double buffering or not.
 
 }
 
+@defmethod[(set-hires-mode [hires-mode any/c])
+           void?]{
+
+Adjusts the configuration to request hires mode or not; see
+@method[gl-config get-hires-mode].
+
+@history[#:added "1.5"]}
+
+@defmethod[(set-legacy? [legacy? any/c])
+           void?]{
+
+Adjusts the configuration to request legacy mode or not; see
+@method[gl-config get-legacy?].
+
+@history[#:added "1.2"]}
+
+
 @defmethod[(set-multisample-size [on? (integer-in 0 256)])
            void?]{
 
@@ -143,37 +180,6 @@ Adjusts the configuration to request a particular stencil-buffer size,
 
 Adjusts the configuration to request stereo or not.
 
-}
-
-@defmethod[(get-legacy?)
-           boolean?]{
-
-Determines whether to use legacy, "Compatibility" OpenGL or "Core" OpenGL.
-Core OpenGL profiles are currently supported on OS X (versions 10.7 and up)
-and Linux (if the graphics drivers support them).
-@history[#:added "1.2"]
-}
-@defmethod[(set-legacy? [legacy? any/c])
-           void?]{
-
-Adjusts the configuration to request legacy or not.
-@history[#:added "1.2"]
-}
-
-@defmethod[(get-hires-mode)
-           boolean?]{
-
-Determines whether to use hires mode. On OS X, this means that the
-created OpenGL contexts will have access to the full Retina resolution
-and will not be scaled by the drawing system. On other platforms, it
-means nothing.
-@history[#:added "1.5"]
-}
-@defmethod[(set-hires-mode [hires-mode any/c])
-           void?]{
-
-Adjusts the configuration to request hires mode or not.
-@history[#:added "1.5"]
 }
 
 }

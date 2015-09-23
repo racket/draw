@@ -17,7 +17,7 @@ A @racket[region%] object can be associated to a particular
  scrolling always applies when the region is used (and it does not
  affect the region's bounding box).
 
-Region combination with operations like @racket[region% union] are
+Region combination with operations like @method[region% union] are
  approximate, and they are implemented by combining paths. Certain
  combinations work only if the paths have a suitable fill mode, which
  can be either @racket['winding], @racket['even-odd], or a
