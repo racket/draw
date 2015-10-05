@@ -27,7 +27,8 @@
          dc-backend<%>
          default-dc-backend%
          do-set-pen!
-         do-set-brush!)
+         do-set-brush!
+         (protect-out set-font-map-init-hook!))
 
 (define-local-member-name
   do-set-pen!
@@ -250,6 +251,14 @@
 ;; where the first two elements of the vector act as
 ;; a cache for the hash-table lookup.
 (define font-maps (make-vector 8 #f))
+
+;; This hook is used for Mac OS X control font access:
+(define font-map-init-hook void)
+(define (set-font-map-init-hook! proc)
+  (set! font-map-init-hook proc)
+  (for ([e (in-vector font-maps)])
+    (when e
+      (font-map-init-hook e))))
 
 (define UNALIGNED-INDEX 4)
 (define multi-font-map-boundary
@@ -1363,6 +1372,7 @@
 	 [fm fm]
 	 [else
 	  (define fm (pango_cairo_font_map_new))
+          (font-map-init-hook fm)
 	  (vector-set! font-maps smoothing-index fm)
 	  fm])]))
 
