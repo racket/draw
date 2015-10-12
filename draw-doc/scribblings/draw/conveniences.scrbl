@@ -25,4 +25,6 @@ Draws an arrow on @racket[dc] from (@racket[start-x], @racket[start-y]) to
 (@racket[end-x], @racket[end-y]). (@racket[dx], @racket[dy]) is the top-left
 location for drawing.
 If @racket[pen-width] is @racket[#f], the current pen width is used.
+
+@history[#:added "1.9"]{}
 }
