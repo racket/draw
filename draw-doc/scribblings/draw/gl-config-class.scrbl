@@ -96,6 +96,14 @@ Reports whether the configuration requests stereo or not.
 
 }
 
+@defmethod[(get-sync-swap)
+           boolean?]{
+
+Reports whether the configuration requests buffer-swapping
+synchronization with the screen refresh.
+
+@history[#:added "1.10"]}
+
 @defmethod[(set-accum-size [on? (integer-in 0 256)])
            void?]{
 
@@ -178,8 +186,15 @@ Adjusts the configuration to request a particular stencil-buffer size,
 @defmethod[(set-stereo [on? any/c])
            void?]{
 
-Adjusts the configuration to request stereo or not.
+Adjusts the configuration to request stereo or not.}
 
-}
+
+@defmethod[(set-sync-swap [on? any/c])
+           void?]{
+
+Adjusts the configuration to request buffer-swapping
+synchronization with the screen refresh or not.
+
+@history[#:added "1.10"]}
 
 }

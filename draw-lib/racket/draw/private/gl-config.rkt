@@ -5,8 +5,6 @@
 (provide gl-config%)
 
 (defclass gl-config% object%
-  (super-new)
-
   (define hires-mode #f)
   (define/public (get-hires-mode) hires-mode)
   (define/public (set-hires-mode v) (set! hires-mode (and v #t)))
@@ -46,4 +44,11 @@
   (define share-context #f)
   (define/public (get-share-context) share-context)
   (define/public (set-share-context s)
-    (set! share-context s)))
+    (set! share-context s))
+
+  (define sync? #f)
+  (define/public (get-sync-swap) sync?)
+  (define/public (set-sync-swap on?)
+    (set! sync? (and on? #t)))
+  
+  (super-new))
