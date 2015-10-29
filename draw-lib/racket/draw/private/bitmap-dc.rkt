@@ -63,8 +63,10 @@
 
     (def/override (get-size)
       (let ([bm bm])
-        (values (exact->inexact (send bm get-width))
-                (exact->inexact (send bm get-height)))))
+        (if bm
+            (values (exact->inexact (send bm get-width))
+                    (exact->inexact (send bm get-height)))
+            (values 1 1))))
 
     (define/override (get-cr) c)
     (define/override (release-cr cr) (when bm (send bm drop-alpha-s)))
@@ -101,7 +103,7 @@
     (define/override (collapse-bitmap-b&w?) b&w?)
 
     (define/override (get-clear-operator)
-      (if (or b&w? (send bm has-alpha-channel?))
+      (if (or b&w? (and bm (send bm has-alpha-channel?)))
           CAIRO_OPERATOR_CLEAR
           CAIRO_OPERATOR_OVER))))
 
