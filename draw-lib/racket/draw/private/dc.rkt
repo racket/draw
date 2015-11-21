@@ -788,6 +788,15 @@
       (with-cr
        (check-ok 'copy)
        cr
+       (let* ([p (cairo_pattern_create_for_surface (cairo_get_target cr))]
+              [mx (make-cairo_matrix_t 1 0 0 1 0 0)])
+         (cairo_identity_matrix cr)
+         (init-effective-matrix mx)
+         (cairo_translate cr (* (cairo_matrix_t-xx mx) (- x2 x)) (* (cairo_matrix_t-yy mx) (- y2 y)))
+         (cairo_set_source cr p)
+         (do-reset-matrix cr)
+         (cairo_pattern_destroy p))
+       #;
        (cairo_set_source_surface cr
                                  (cairo_get_target cr)
                                  (- x2 x) (- y2 y))
