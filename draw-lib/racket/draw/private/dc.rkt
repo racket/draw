@@ -785,26 +785,32 @@
 
     (def/public (copy [real? x] [real? y] [nonnegative-real? w] [nonnegative-real? h]
                       [real? x2] [real? y2])
+       (internal-copy x y w h x2 y2 #f))
+
+    (define/public (internal-copy x y w h x2 y2 alt)
       (with-cr
        (check-ok 'copy)
        cr
-       (let* ([p (cairo_pattern_create_for_surface (cairo_get_target cr))]
-              [mx (make-cairo_matrix_t 1 0 0 1 0 0)])
-         (cairo_identity_matrix cr)
-         (init-effective-matrix mx)
-         (cairo_translate cr (* (cairo_matrix_t-xx mx) (- x2 x)) (* (cairo_matrix_t-yy mx) (- y2 y)))
-         (cairo_set_source cr p)
-         (do-reset-matrix cr)
-         (cairo_pattern_destroy p))
-       #;
-       (cairo_set_source_surface cr
-                                 (cairo_get_target cr)
-                                 (- x2 x) (- y2 y))
-       (cairo_set_operator cr CAIRO_OPERATOR_SOURCE)
-       (cairo_new_path cr)
-       (cairo_rectangle cr x2 y2 w h)
-       (cairo_fill cr)
-       (cairo_set_operator cr CAIRO_OPERATOR_OVER)))
+       (or (and alt
+                (alt cr x y w h x2 y2)
+                (void))
+           (let* ([p (cairo_pattern_create_for_surface (cairo_get_target cr))]
+                  [mx (make-cairo_matrix_t 1 0 0 1 0 0)])
+             (cairo_identity_matrix cr)
+             (init-effective-matrix mx)
+             (cairo_translate cr (* (cairo_matrix_t-xx mx) (- x2 x)) (* (cairo_matrix_t-yy mx) (- y2 y)))
+             (cairo_set_source cr p)
+             (do-reset-matrix cr)
+             (cairo_pattern_destroy p))
+           #;
+           (cairo_set_source_surface cr
+                                     (cairo_get_target cr)
+                                     (- x2 x) (- y2 y))
+           (cairo_set_operator cr CAIRO_OPERATOR_SOURCE)
+           (cairo_new_path cr)
+           (cairo_rectangle cr x2 y2 w h)
+           (cairo_fill cr)
+           (cairo_set_operator cr CAIRO_OPERATOR_OVER))))
 
     (define/private (make-pattern-surface cr col draw)
       (let* ([s (cairo_surface_create_similar (cairo_get_target cr)

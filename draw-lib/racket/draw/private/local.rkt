@@ -16,6 +16,7 @@
   get-bitmap-gl-context
   drop-alpha-s
   draw-bitmap-to
+  do-self-copy
 
   ;; bitmap-dc%
   internal-get-bitmap
@@ -25,6 +26,7 @@
   in-cairo-context
   get-clipping-matrix
   reset-config
+  internal-copy
 
   ;; region%
   install-region

@@ -355,6 +355,9 @@
     (define/public (get-bitmap-gl-context)
       #f)
 
+    (define/public (do-self-copy dc x y w h x2 y2)
+      #f)
+    
     (define/public (make-dc) (make-object -bitmap-dc% this))
 
     (define/public (load-file in
