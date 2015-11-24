@@ -41,10 +41,9 @@ as determined by @method[dc<%> get-background]). See also @method[dc<%> erase].
 Copies the rectangle defined by @racket[x], @racket[y],
 @racket[width], and @racket[height] of the drawing context to the same
 drawing context at the position specified by @racket[x2] and
-@racket[y2].
+@racket[y2]. The source and destination regions can overlap.
 
-The result is undefined if the source and destination rectangles
-overlap.}
+@history[#:changed "1.12" @elem{Allow overlapping source and destination.}]}
 
 
 @defmethod[(draw-arc [x real?]

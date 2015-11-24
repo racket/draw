@@ -794,23 +794,57 @@
        (or (and alt
                 (alt cr x y w h x2 y2)
                 (void))
-           (let* ([p (cairo_pattern_create_for_surface (cairo_get_target cr))]
-                  [mx (make-cairo_matrix_t 1 0 0 1 0 0)])
-             (cairo_identity_matrix cr)
-             (init-effective-matrix mx)
-             (cairo_translate cr (* (cairo_matrix_t-xx mx) (- x2 x)) (* (cairo_matrix_t-yy mx) (- y2 y)))
-             (cairo_set_source cr p)
-             (do-reset-matrix cr)
-             (cairo_pattern_destroy p))
-           #;
-           (cairo_set_source_surface cr
-                                     (cairo_get_target cr)
-                                     (- x2 x) (- y2 y))
-           (cairo_set_operator cr CAIRO_OPERATOR_SOURCE)
-           (cairo_new_path cr)
-           (cairo_rectangle cr x2 y2 w h)
-           (cairo_fill cr)
-           (cairo_set_operator cr CAIRO_OPERATOR_OVER))))
+           (begin
+             (let* ([p (cairo_pattern_create_for_surface (cairo_get_target cr))]
+                    [mx (make-cairo_matrix_t 1 0 0 1 0 0)])
+               (cairo_identity_matrix cr)
+               (init-effective-matrix mx)
+               (cairo_translate cr (* (cairo_matrix_t-xx mx) (- x2 x)) (* (cairo_matrix_t-yy mx) (- y2 y)))
+               (cairo_set_source cr p)
+               (do-reset-matrix cr)
+               (cairo_pattern_destroy p))
+             (cairo_set_operator cr CAIRO_OPERATOR_SOURCE)
+             ;; Needs more work to deal with pixel alignment:
+             (let loop ([x x] [y y] [w w] [h h] [x2 x2] [y2 y2])
+               (cond
+                [(<= w 0.0) (void)]
+                [(<= h 0.0) (void)]
+                [(or (not (or (and (<= x x2) (< x2 (+ x w)))
+                              (and (<= x2 x) (< x (+ x2 w)))))
+                     (not (or (and (<= y y2) (< y2 (+ y h)))
+                              (and (<= y2 y) (< y (+ y2 h))))))
+                 ;; No overlap
+                 (cairo_new_path cr)
+                 (cairo_rectangle cr x2 y2 w h)
+                 (cairo_fill cr)]
+                [(< (* (abs (- x x2)) h)
+                    (* (abs (- y y2)) w))
+                 ;; Move a top or bottom slice
+                 (cond
+                  [(< y2 y)
+                   ;; Move a top slice
+                   (define dy (- y y2))
+                   (loop x y w dy x2 y2)
+                   (loop x (+ y dy) w (- h dy) x2 (+ y2 dy))]
+                  [else
+                   ;; Move a bottom slice
+                   (define dy (- y2 y))
+                   (loop x (- (+ y h) dy) w dy x2 (- (+ y2 h) dy))
+                   (loop x y w (- h dy) x2 y2)])]
+                [else
+                 ;; Move a left or right slice
+                 (cond
+                  [(< x2 x)
+                   ;; Move a left slice
+                   (define dx (- x x2))
+                   (loop x y dx h x2 y2)
+                   (loop (+ x dx) y (- w dx) h (+ x2 dx) y2)]
+                  [else
+                   ;; Move a right slice
+                   (define dx (- x2 x))
+                   (loop (- (+ x w) dx) y dx h (- (+ x2 w) dx) y2)
+                   (loop x y (- w dx) h x2 y2)])]))
+             (cairo_set_operator cr CAIRO_OPERATOR_OVER)))))
 
     (define/private (make-pattern-surface cr col draw)
       (let* ([s (cairo_surface_create_similar (cairo_get_target cr)
