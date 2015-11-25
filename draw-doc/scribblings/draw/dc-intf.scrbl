@@ -505,6 +505,15 @@ Gets the color used for painting the background. See also
 
 }
 
+
+@defmethod[(get-backing-scale)
+           (>/c 0.0)]{
+
+Returns the @tech{backing scale} of the drawing context's destination.
+
+@history[#:added "1.12"]}
+
+
 @defmethod[(get-brush)
            (is-a?/c brush%)]{
 
@@ -862,13 +871,13 @@ Sets the drawing context's @deftech{alignment scale}, which determines
  aligned drawing (see @method[dc<%> set-smoothing]).
 
 The default @tech{alignment scale} is @racket[1.0], which means that
- drawing coorinates and pen sizes are aligned to integer values.
+ drawing coordinates and pen sizes are aligned to integer values.
 
 An @tech{alignment scale} of @racket[2.0] aligns drawing coordinates
  to half-integer values. A value of @racket[2.0] could be suitable for
  a @racket[bitmap-dc%] whose destination is a bitmap with a
  @tech{backing scale} of @racket[2.0], since half-integer values
- coorespond to pixel boundaries. Even when a destinate context has a
+ correspond to pixel boundaries. Even when a destinate context has a
  backing scale of @racket[2.0], however, an alignment scale of
  @racket[1.0] may be desirable to maintain consistency with drawing
  contexts that have a backing scale and alignment scale of

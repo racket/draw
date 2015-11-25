@@ -135,9 +135,11 @@
     ;;  the color is for a background.
     install-color
 
-    ;; The public get-size & get-device-scale methods:
+    ;; The public get-size, get-device-scale, and
+    ;; get-backing-scale methods:
     get-size
     get-device-scale
+    get-backing-scale
 
     ;; set-auto-scroll : real real -> void
     ;;
@@ -213,6 +215,7 @@
 
     (define/public (get-size) (values 0.0 0.0))
     (define/public (get-device-scale) (values 1.0 1.0))
+    (define/public (get-backing-scale) 1.0)
 
     (define/public (set-auto-scroll dx dy) (void))
 

@@ -78,6 +78,12 @@
           'unsmoothed
           s))
 
+    (def/override (get-backing-scale)
+      (let ([bm (internal-get-bitmap)])
+        (if bm
+            (exact->inexact (send bm get-backing-scale))
+            1.0)))
+
     (define/override (install-color cr c a bg?)
       (if b&w?
           (begin

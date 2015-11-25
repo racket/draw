@@ -101,6 +101,7 @@
     [flush (->m void?)]
     [get-alpha (->m real?)]
     [get-background (->m (is-a?/c color%))]
+    [get-backing-scale (->m (>/c 0.0))]
     [get-brush (->m (is-a?/c brush%))]
     [get-char-height (->m (and/c real? (not/c negative?)))]
     [get-char-width (->m (and/c real? (not/c negative?)))]
