@@ -147,10 +147,11 @@
 
   (define/private (create-desc ps? cached-desc font-descs install!)
     (or cached-desc
-        (let ([desc (atomically (hash-ref font-descs key #f))])
-          (and desc
-               (install! desc)
-               desc))
+        (let ([desc-e (atomically (hash-ref font-descs key #f))])
+          (and desc-e
+               (let ([desc (ephemeron-value desc-e)])
+                 (install! desc)
+                 desc)))
         (let* ([desc-str (if ps?
                              (send the-font-name-directory
                                    get-post-script-name
@@ -182,7 +183,7 @@
           (let ([size (if size-in-pixels? size (* dpi-scale size))])
             (pango_font_description_set_absolute_size desc (* size PANGO_SCALE)))
           (install! desc)
-          (atomically (hash-set! font-descs key desc))
+          (atomically (hash-set! font-descs key (make-ephemeron key desc)))
           desc)))
 
   (field [s-pango-attrs #f])

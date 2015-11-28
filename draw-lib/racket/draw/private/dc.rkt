@@ -1555,15 +1555,18 @@
                                    (not effective-scale-font-cached?))
                                #f
                                (get-size-cache desc))]
-                    [layouts (let ([attr-layouts (or (hash-ref (let ([t (vector-ref desc-layoutss smoothing-index)])
-                                                                 (or t
-                                                                     (let ([t (make-weak-hasheq)])
-                                                                       (vector-set! desc-layoutss smoothing-index t)
-                                                                       t)))
-                                                               desc 
-                                                               #f)
+                    [layouts (let ([attr-layouts (or (let ([e (hash-ref (let ([t (vector-ref desc-layoutss smoothing-index)])
+                                                                          (or t
+                                                                              (let ([t (make-weak-hasheq)])
+                                                                                (vector-set! desc-layoutss smoothing-index t)
+                                                                                t)))
+                                                                        desc 
+                                                                        #f)])
+                                                       (and e (ephemeron-value e)))
                                                      (let ([layouts (make-hasheq)])
-                                                       (hash-set! (vector-ref desc-layoutss smoothing-index) desc layouts)
+                                                       (hash-set! (vector-ref desc-layoutss smoothing-index)
+                                                                  desc
+                                                                  (make-ephemeron desc layouts))
                                                        layouts))])
                                (or (hash-ref attr-layouts attrs #f)
                                    (let ([layouts (make-hasheq)])
