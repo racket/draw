@@ -20,7 +20,8 @@
         [(windows) (ffi-lib windows-lib) ...])
      (begin
        (define-runtime-path-list libs
-         (case (cross-system-type)
+         #:runtime?-id runtime?
+         (case (if runtime? (system-type) (cross-system-type))
            [(macosx) '((so mac-lib) ...)]
            [(unix) null]
            [(windows) `((so windows-lib) ...)]))
@@ -37,7 +38,8 @@
         [(win64) (ffi-lib win64-lib) ...])
      (begin
        (define-runtime-path-list libs
-         (case (cross-system-type)
+         #:runtime?-id runtime?
+         (case (if runtime? (system-type) (cross-system-type))
            [(macosx) '((so mac-lib) ...)]
            [(unix) null]
            [(windows)
