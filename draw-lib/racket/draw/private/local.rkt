@@ -45,6 +45,7 @@
   ;; dc-backend<%>
   get-cr
   release-cr
+  release-unchanged-cr
   end-cr
   reset-cr
   flush-cr

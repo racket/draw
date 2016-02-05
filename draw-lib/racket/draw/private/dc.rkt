@@ -65,6 +65,7 @@
     ;;
     ;; Stops using a cairo_t obtained by a get-cr
     release-cr
+    release-unchanged-cr
 
     ;; Ends a document
     end-cr
@@ -175,6 +176,7 @@
 
     (define/public (get-cr) #f)
     (define/public (release-cr cr) (void))
+    (define/public (release-unchanged-cr cr) (release-cr cr))
     (define/public (end-cr) (void))
     (define/public (reset-cr) (void))
     
@@ -271,7 +273,8 @@
 
 (define (dc-mixin backend%)
   (defclass* dc% backend% (dc<%>)
-    (inherit flush-cr get-cr release-cr end-cr init-cr-matrix init-effective-matrix
+    (inherit flush-cr get-cr release-cr release-unchanged-cr end-cr
+             init-cr-matrix init-effective-matrix
 	     get-pango
              install-color dc-adjust-smoothing get-hairline-width dc-adjust-cap-shape
              reset-clip
@@ -286,7 +289,7 @@
     ;; have a separate per-dc lock, we can hit deadlock due to
     ;; lock order.
 
-    (define-syntax-rule (with-cr default cr . body)
+    (define-syntax-rule (with-cr* release-cr default cr . body)
       ;; Faster:
       (begin
         (start-atomic)
@@ -310,6 +313,11 @@
 		   (lambda () . body) 
 		   (lambda () (release-cr cr)))
                default)))))
+    
+    (define-syntax-rule (with-cr default cr . body)
+      (with-cr* release-cr default cr . body))
+    (define-syntax-rule (with-unchanged-cr default cr . body)
+      (with-cr* release-unchanged-cr default cr . body))
 
     (define/public (in-cairo-context cb)
       (with-cr (void) cr (cb cr)))
@@ -552,7 +560,7 @@
       (cairo_rotate cr (- rotation)))
     
     (define/private (reset-matrix)
-      (with-cr
+      (with-unchanged-cr
        (void)
        cr
        (do-reset-matrix cr)))
@@ -724,7 +732,7 @@
     (def/public (set-clipping-region [(make-or-false region%) r])
       (do-set-clipping-region r))
     (define/private (do-set-clipping-region r)
-      (with-cr
+      (with-unchanged-cr
        (void)
        cr
        (when clipping-region
@@ -1363,7 +1371,7 @@
                                               (values #f #f #f #f)))))))))])
           (if w
               (values w h d a)
-              (with-cr
+              (with-unchanged-cr
                (values 1.0 1.0 0.0 0.0)
                cr
                (do-text cr #f s 0 0 use-font combine? offset 0.0))))))
@@ -2018,7 +2026,7 @@
       (and
        (not (eqv? c #\uFFFF))
        (not (eqv? c #\uFFFE))
-       (with-cr
+       (with-unchanged-cr
         #f
         cr
         (let ([desc (get-pango font)]
@@ -2038,7 +2046,7 @@
              (g_object_unref layout)))))))
     
     (def/public (get-char-width)
-      (or (with-cr
+      (or (with-unchanged-cr
            10.0
            cr
            (get-font-metric cr pango_font_metrics_get_approximate_char_width
@@ -2047,7 +2055,7 @@
             w)))
 
     (def/public (get-char-height)
-      (or (with-cr
+      (or (with-unchanged-cr
            12.0
            cr
            (get-font-metric cr (lambda (m)
