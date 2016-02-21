@@ -1530,10 +1530,10 @@
                        [else
                         (let ([logical (make-PangoRectangle 0 0 0 0)])
                           (pango_layout_get_extents layout #f logical)
-                          (let ([nh (/ (PangoRectangle-height logical) (exact->inexact PANGO_SCALE))]
-                                [nd (/ (- (PangoRectangle-height logical)
-                                          (pango_layout_get_baseline layout))
-                                       (exact->inexact PANGO_SCALE))])
+                          (let ([nh (/ (->fl (PangoRectangle-height logical)) (->fl PANGO_SCALE))]
+                                [nd (/ (->fl (- (PangoRectangle-height logical)
+                                                (pango_layout_get_baseline layout)))
+                                       (->fl PANGO_SCALE))])
                             (when draw-mode
                               (let ([bl (if measured? (- h d) (- nh nd))])
                                 (pango_layout_get_extents layout #f logical)
@@ -1553,7 +1553,8 @@
                               (let ([nw (if blank?
                                             0.0
                                             (force-hinting
-                                             (/ (PangoRectangle-width logical) (exact->inexact PANGO_SCALE))))]
+                                             (fl/ (->fl (PangoRectangle-width logical))
+                                                  (->fl PANGO_SCALE))))]
                                     [na 0.0])
                                 (loop next-s draw-mode measured? unrotate?
                                       (+ w nw) (max h nh) (max d nd) (max a na)))])))])))]))
@@ -1660,7 +1661,9 @@
                                  ;; and draw the glyphs
                                  (cairo_move_to cr 
                                                 (text-align-x/delta x 0) 
-                                                (text-align-y/delta (+ y (/ (vector-ref first-v 4) (->fl PANGO_SCALE))) 0))
+                                                (text-align-y/delta (+ y (fl/ (->fl (vector-ref first-v 4))
+                                                                              (->fl PANGO_SCALE)))
+                                                                    0))
                                  (pango_cairo_show_glyph_string cr first-font glyph-string)
                                  (free glyph-infos)
                                  #t)))))
@@ -1672,20 +1675,22 @@
                                (let ([baseline (pango_layout_get_baseline layout)]
                                      [orig-h (PangoRectangle-height logical)])
                                  (let ([lw (force-hinting
-                                            (/ (PangoRectangle-width logical) 
-                                               (exact->inexact PANGO_SCALE)))]
-                                       [flh (/ orig-h (exact->inexact PANGO_SCALE))]
-                                       [ld (exact->inexact (/ (- orig-h baseline) (exact->inexact PANGO_SCALE)))]
+                                            (fl/ (->fl (PangoRectangle-width logical))
+                                                 (->fl PANGO_SCALE)))]
+                                       [flh (fl/ (->fl orig-h)
+                                                 (->fl PANGO_SCALE))]
+                                       [ld (fl/ (->fl (- orig-h baseline))
+                                                (->fl PANGO_SCALE))]
                                        [la 0.0])
-                                   (let ([lh (ceiling flh)])
+                                   (let ([lh (flceiling flh)])
                                      (when cache
                                        (hash-set! cache (char->integer ch) 
                                                   (vector lw lh ld la 
                                                           ;; baseline in Pango units; for fast path
                                                           baseline
                                                           ;; rounded width in Pango units; for fast path
-                                                          (inexact->exact
-                                                           (floor (* lw (->fl PANGO_SCALE))))
+                                                          (fl->exact-integer
+                                                           (flfloor (fl* lw (->fl PANGO_SCALE))))
                                                           ;; unrounded height, for slow-path alignment
                                                           flh)))
                                      (values lw lh ld la flh))))))]
@@ -2091,9 +2096,9 @@
                     (set-cairo_matrix_t-yy! mx 1.0)])
                  (let ([v (sel metrics)])
                    (pango_font_metrics_unref metrics)
-                   (/ v (* (exact->inexact PANGO_SCALE)
-                           (s-sel (cairo_matrix_t-xx mx)
-                                  (cairo_matrix_t-yy mx)))))))))
+                   (fl/ v (fl* (->fl PANGO_SCALE)
+                               (s-sel (cairo_matrix_t-xx mx)
+                                      (cairo_matrix_t-yy mx)))))))))
 
     (super-new))
 
