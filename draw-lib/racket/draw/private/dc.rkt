@@ -2096,7 +2096,8 @@
                     (set-cairo_matrix_t-yy! mx 1.0)])
                  (let ([v (sel metrics)])
                    (pango_font_metrics_unref metrics)
-                   (fl/ v (fl* (->fl PANGO_SCALE)
+                   (fl/ (->fl v)
+                        (fl* (->fl PANGO_SCALE)
                                (s-sel (cairo_matrix_t-xx mx)
                                       (cairo_matrix_t-yy mx)))))))))
 
