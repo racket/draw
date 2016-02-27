@@ -354,8 +354,6 @@
 
 (define (record-dc-mixin %)
   (class %
-    (super-new)
-
     (inherit get-origin get-scale get-rotation get-initial-matrix 
              get-pen get-brush get-font
              get-smoothing get-text-mode 
@@ -365,6 +363,12 @@
 
     (define record-limit +inf.0)
     (define current-size 0)
+    (define procs null)
+    (define converts null)
+    (define clones (make-hasheq))
+    (define converteds (make-hasheq))
+
+    (super-new)
 
     (define/public (set-recording-limit amt)
       (set! record-limit amt))
@@ -466,8 +470,6 @@
                      ...
                      [else (error 'unconvert "bad datum: ~e" cmd-tag)])))))]))
 
-    (define procs null)
-    (define converts null)
     (define/private (record proc convert)
       (when (continue-recording?)
         (start-atomic)
@@ -534,7 +536,6 @@
 
     (define/public (applies-to-default?) #t)
 
-    (define clones (make-hasheq))
     (define/private (clone clone-x x)
       (or (let ([new-x (hash-ref clones x #f)])
             (and new-x
@@ -545,7 +546,6 @@
               (hash-set! clones x new-x))
             new-x)))
 
-    (define converteds (make-hasheq))
     (define/private (convert convert-x x)
       (or (hash-ref converteds x #f)
           (let ([new-x (convert-x x)])

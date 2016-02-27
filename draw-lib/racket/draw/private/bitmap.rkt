@@ -1072,8 +1072,8 @@
 (define quartz-bitmap%
   (class bitmap%
     (init w h [with-alpha? #t] [resolution 1.0] [dest-cg #f])
-    (super-make-object (make-alternate-bitmap-kind w h resolution))
-    
+
+    (define has-alpha? with-alpha?)
     (define s
       (let* ([sw (*i resolution w)]
              [sh (*i resolution h)]
@@ -1094,11 +1094,12 @@
           (cairo_destroy cr))
         s))
 
+    (super-make-object (make-alternate-bitmap-kind w h resolution))
+
     (define/override (ok?) (and s #t))
 
     (define/override (is-color?) #t)
 
-    (define has-alpha? with-alpha?)
     (define/override (has-alpha-channel?) has-alpha?)
 
     (define/override (get-cairo-surface) s)
