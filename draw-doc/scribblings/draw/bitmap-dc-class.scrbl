@@ -48,8 +48,8 @@ The same as @method[dc<%> draw-bitmap-section], except that
  @racket['unsmoothed], it is changed to @racket['aligned] while
  drawing.}
 
-@defmethod[(get-argb-pixels [x real?]
-                            [y real?]
+@defmethod[(get-argb-pixels [x exact-nonnegative-integer?]
+                            [y exact-nonnegative-integer?]
                             [width exact-nonnegative-integer?]
                             [height exact-nonnegative-integer?]
                             [pixels (and/c bytes? (not/c immutable?))]
@@ -105,8 +105,8 @@ Gets the bitmap currently installed in the DC, or @racket[#f] if no
 
 }
 
-@defmethod[(get-pixel [x real?]
-                      [y real?]
+@defmethod[(get-pixel [x exact-nonnegative-integer?]
+                      [y exact-nonnegative-integer?]
                       [color (is-a?/c color%)])
            boolean?]{
 

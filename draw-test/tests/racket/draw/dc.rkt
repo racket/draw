@@ -180,6 +180,14 @@
 					    (make-bytes 8 255))
 			      bts))
 
+   (for ([i (in-range (bytes-length bts))]) (bytes-set! bts i 17))
+   (stv mdc get-argb-pixels 8 8 3 3 bts)
+   (test #t 'same-str (equal? (bytes-append (make-bytes 8 255) (bytes 255 0 0 0)
+                                            (make-bytes 8 255) (bytes 255 0 0 0)
+					    (bytes 255 0 0 0) (bytes 255 0 0 0) (bytes 255 0 0 0)
+                                            (make-bytes 4 17))
+			      bts))
+
    (define col2 (make-object color% 130 140 150))
    (send mdc try-color col2 col2)
    (let loop ([i 0])

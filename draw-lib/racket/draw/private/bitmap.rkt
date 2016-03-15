@@ -763,15 +763,26 @@
               (do-get-argb-pixels x y w h bstr get-alpha? pre-mult?
                                   (*i width backing-scale) (*i height backing-scale))))))
 
+    (define-syntax-rule (for** ([i i-all i-hi]
+                                [j j-all j-hi])
+                           . body)
+      ;; These combinations will cover the corner twice,
+      ;; but that's ok as long as `body` is idempotent.
+      ;; Anyway, we're only doing this to fill in blank areas
+      ;; for a too-large request.
+      (begin
+        (for* ([i i-hi] [j j-all]) . body)
+        (for* ([i i-all] [j j-hi]) . body)))
+
     (define/private (do-get-argb-pixels x y w h bstr get-alpha? pre-mult? width height)
       ;; Fill range that is beyond edge of picture:
       (if get-alpha?
-          (for* ([i (in-range width (+ x w))]
-                 [j (in-range height (+ y h))])
-            (bytes-set! bstr (* 4 (+ i (* j w))) 255))
-          (for* ([i (in-range width (+ x w))]
-                 [j (in-range height (+ y h))])
-            (let ([p (* 4 (+ i (* j w)))])
+          (for** ([i (in-range x (+ x w)) (in-range (max x width) (+ x w))]
+                  [j (in-range y (+ y h)) (in-range (max y height) (+ y h))])
+            (bytes-set! bstr (* 4 (+ (- i x) (* (- j y) w))) 255))
+          (for** ([i (in-range x (+ x w)) (in-range (max x width) (+ x w))]
+                  [j (in-range y (+ y h)) (in-range (max y height) (+ y h))])
+            (let ([p (* 4 (+ (- i x) (* (- j y) w)))])
               (bytes-set! bstr p 255)
               (bytes-set! bstr (+ p 1) 0)
               (bytes-set! bstr (+ p 2) 0)
@@ -785,11 +796,11 @@
                 [um (and (or (and alpha-channel? (not pre-mult?)) b&w?)
                          (get-unmult-table))]
                 [set-alpha? alpha-channel?])
-            (let ([w2 (+ x (min (- width x) w))])
-              (for* ([j (in-range y (min (+ y h) height))])
+            (let ([w2 (max 0 (min width (+ x w)))])
+              (for* ([j (in-range (max 0 y) (min (+ y h) height))])
                 (let* ([row (* j row-width)]
                        [p (* 4 (* (- j y) w))]
-                       [ri-start (+ row (* 4 x))]
+                       [ri-start (+ row (* 4 (max 0 x)))]
                        [ri-end (+ row (* 4 w2))]
                        [pi-start p]
                        [pi-end (+ p (* 4 (- w2 x)))])

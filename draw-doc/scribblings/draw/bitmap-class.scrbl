@@ -81,8 +81,8 @@ When a @racket[bits] byte string is provided: Creates a monochrome
 @history[#:changed "1.1" @elem{Added the @racket[backing-scale]
 optional arguments.}]}
 
-@defmethod[(get-argb-pixels [x real?]
-                            [y real?]
+@defmethod[(get-argb-pixels [x exact-nonnegative-integer?]
+                            [y exact-nonnegative-integer?]
                             [width exact-nonnegative-integer?]
                             [height exact-nonnegative-integer?]
                             [pixels (and/c bytes? (not/c immutable?))]

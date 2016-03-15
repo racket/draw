@@ -236,7 +236,7 @@
             (any/c any/c)
             void?)]
     [get-bitmap (->m (or/c (is-a?/c bitmap%) #f))]
-    [get-pixel (->m real? real? (is-a?/c color%) boolean?)]
+    [get-pixel (->m exact-nonnegative-integer? exact-nonnegative-integer? (is-a?/c color%) boolean?)]
     [set-argb-pixels
       (->*m (exact-nonnegative-integer?
              exact-nonnegative-integer?
