@@ -352,6 +352,36 @@
   (send dc rotate (dc-state-rotation state))
   state)
 
+(define (apply-transform state t)
+  (define im (dc-state-initial-matrix state))
+  (define mx (make-cairo_matrix_t (vector-ref im 0)
+                                  (vector-ref im 1)
+                                  (vector-ref im 2)
+                                  (vector-ref im 3)
+                                  (vector-ref im 4)
+                                  (vector-ref im 5)))
+  (cairo_matrix_translate mx (dc-state-origin-x state) (dc-state-origin-y state))
+  (cairo_matrix_scale mx (dc-state-scale-x state) (dc-state-scale-y state))
+  (cairo_matrix_rotate mx (dc-state-rotation state))
+  (cairo_matrix_multiply mx
+                         (make-cairo_matrix_t (vector-ref t 0)
+                                              (vector-ref t 1)
+                                              (vector-ref t 2)
+                                              (vector-ref t 3)
+                                              (vector-ref t 4)
+                                              (vector-ref t 5))
+                         mx)
+  (struct-copy dc-state state
+               [initial-matrix (vector-immutable (cairo_matrix_t-xx mx)
+                                                 (cairo_matrix_t-yx mx)
+                                                 (cairo_matrix_t-xy mx)
+                                                 (cairo_matrix_t-yy mx)
+                                                 (cairo_matrix_t-x0 mx)
+                                                 (cairo_matrix_t-y0 mx))]
+               [origin-x 0.0] [origin-y 0.0]
+               [scale-x 1.0] [scale-y 1.0]
+               [rotation 0.0]))
+
 (define (record-dc-mixin %)
   (class %
     (inherit get-origin get-scale get-rotation get-initial-matrix 
@@ -609,6 +639,12 @@
         (record (lambda (dc state)
                   (install-transform dc (struct-copy dc-state state [initial-matrix mi])))
                 (lambda () `(set-initial-matrix ,mi)))))
+    (define/override (transform t)
+      (super transform t)
+      (let ([t (vector->immutable-vector t)])
+        (record (lambda (dc state)
+                  (install-transform dc (apply-transform state t)))
+                (lambda () `(transform ,t)))))
 
     (generate-record-unconvert
      ([(set-clipping-region) (lambda (r) 
@@ -643,10 +679,11 @@
                           (install-transform dc (struct-copy dc-state state [rotation r]))))]
       [(set-initial-matrix) (lambda (mi)
                               (lambda (dc state)
-                                (install-transform dc (struct-copy dc-state state [initial-matrix mi]))))])
+                                (install-transform dc (struct-copy dc-state state [initial-matrix mi]))))]
+      [(transform) (lambda (t)
+                     (lambda (dc state)
+                       (install-transform dc (apply-transform state t))))])
      ;; remaining clauses are generated:
-
-     (define/record (transform [mi vector->immutable-vector]))
 
      (define/record (set-smoothing s))
 

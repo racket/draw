@@ -701,6 +701,13 @@
                               (send dc set-pen old-pen)
                               (send dc set-brush old-brush))
 
+                            ;; Trannsform:
+                            (let ()
+                              (define t (send dc get-transformation))
+                              (send dc transform (vector 0 1 1 0 380 170))
+                              (send dc draw-text "A8" 0 0 (make-font #:size 24))
+                              (send dc set-transformation t))
+
 			    ; Bitmap copying:
 			    (when (and (not no-bitmaps?) last?)
 			      (let ([x 5] [y 165])
