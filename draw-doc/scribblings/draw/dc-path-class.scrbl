@@ -79,7 +79,7 @@ Extends or starts the path's @tech{open sub-path} with a curve that
  destination, since @method[dc-path% arc] reduces its input to a sequence of curves.
  In contrast, @xmethod[dc<%> draw-arc] can automatically correct for round off,
  since the drawing mode is known immediately.}
- The ellipse section starts a the angle
+ The ellipse section starts at the angle
  @racket[start-radians] (@racket[0] is three o'clock and half-π is
  twelve o'clock) and continues to the angle @racket[end-radians]; if
  @racket[counter-clockwise?] is true, then the arc runs
