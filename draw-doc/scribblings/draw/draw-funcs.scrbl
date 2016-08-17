@@ -86,6 +86,8 @@ When @racket[stipple] is @racket[#f], @racket[gradient] is
 result brush is created via @method[brush-list% find-or-create-brush] of
 @racket[the-brush-list].}
 
+A brush transformation has the same representation and meaning as for
+ @xmethod[dc<%> get-transformation].
 
 @defproc[(make-color [red byte?] [green byte?] [blue byte?]
                      [alpha (real-in 0 1) 1.0])
