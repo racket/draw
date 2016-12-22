@@ -281,9 +281,7 @@
               (png_set_gamma png (if (and (real? screen-gamma)
                                           (<= 0.0 screen-gamma 10.0))
                                      screen-gamma
-                                     (case (system-type)
-                                       [(macosx) 1.7]
-                                       [else 2.0]))
+                                     2.2)
                              gamma))))
         (cond
          [alpha?
