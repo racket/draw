@@ -86,7 +86,7 @@ Returns the current settings for horizontal and vertical PostScript
 
 Gets the printing mode that determines where output is sent:
  @racket['preview], @racket['file], or @racket['printer].  The default
- for X is @racket['preview]. The value in Windows and Mac OS X is
+ for X is @racket['preview]. The value in Windows and Mac OS is
  always @racket['file].
 
 }
@@ -228,7 +228,7 @@ The margins are in unscaled @racket[post-script-dc%] units, which
 Sets the printing mode controlling where output is sent. See
  @method[ps-setup% get-mode].
 
-On Windows and Mac OS X, if @racket['preview] or @racket['printer]
+On Windows and Mac OS, if @racket['preview] or @racket['printer]
  is provided, @|MismatchExn|.
 
 }

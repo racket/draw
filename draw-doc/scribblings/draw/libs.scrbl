@@ -3,7 +3,7 @@
 
 @title[#:tag "libs"]{Platform Dependencies}
 
-On Windows and Mac OS X, the Racket distribution includes all
+On Windows and Mac OS, the Racket distribution includes all
 necessary libraries that are not part of a stock installation of the
 operating system, and the libraries are included in any distribution
 created with @exec{raco distribute} (see @secref[#:doc '(lib

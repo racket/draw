@@ -66,7 +66,7 @@
                        ;; failed to find previously
                        null]
                       [else
-                       ;; Hack: prefer a particular font for Mac OS X
+                       ;; Hack: prefer a particular font for Mac OS
                        (cons "Arial Unicode MS" (get-face-list))])))])
      (let ([desc (send (make-object font%
                                     (send font get-point-size)
@@ -117,7 +117,7 @@
      (cairo_surface_destroy s))))
 
 (define dpi-scale
-  ;; Hard-wire 96dpi for Windows and Linux, but 72 dpi for Mac OS X
+  ;; Hard-wire 96dpi for Windows and Linux, but 72 dpi for Mac OS
   ;; (based on historical defaults on those platforms).
   ;; If the actual DPI for the screen is different, we'll handle
   ;; that by scaling to and from the screen.

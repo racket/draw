@@ -24,7 +24,7 @@ If @racket[interactive] is true, the user is given a dialog for
  setting printing parameters (see @racket[get-ps-setup-from-user]);
  the resulting configuration is installed as the current
  configuration). If the user chooses to print to a file (the only
- possibility on Windows and Mac OS X), another dialog is given to
+ possibility on Windows and Mac OS), another dialog is given to
  select the filename.  If the user hits cancel in either of these
  dialogs, then @method[dc<%> ok?] returns @racket[#f].
 

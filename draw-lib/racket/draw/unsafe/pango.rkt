@@ -154,7 +154,7 @@
 (define-pangocairo pango_cairo_font_map_get_resolution (_pfun PangoFontMap -> _double)
   #:fail (lambda () (lambda (fm) 96.0)))
 
-;; A hook added by our patch (for Mac OS X only):
+;; A hook added by our patch (for Mac OS only):
 (define-pangocairo pango_core_text_add_family_for_font_descriptors
   (_pfun PangoFontMap _string _int (_vector i _pointer) -> _void)
   #:fail (lambda () (lambda (fm nm n decs) (void))))

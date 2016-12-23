@@ -737,7 +737,7 @@ Different kinds of bitmaps can produce different results:
        @racket[make-bitmap] (due to a system-wide, per-process GDI limit).
 
        As an example of platform-specific difference, text is smoothed
-       by default with sub-pixel anti-aliasing on Mac OS X, while text
+       by default with sub-pixel anti-aliasing on Mac OS, while text
        smoothing in a @racket[make-bitmap] result uses only grays.
        Line or curve drawing may touch different pixels than in a
        bitmap produced by @racket[make-bitmap], and bitmap scaling may
@@ -755,11 +755,10 @@ Different kinds of bitmaps can produce different results:
        platform-specific drawing operations as drawing into a
        @racket[canvas%] instance. A bitmap produced by
        @racket[make-screen-bitmap] uses the same platform-specific
-       drawing as @racket[make-platform-bitmap] on Windows or Mac OS
-       X, but possibly scaled, and it may be scaled or sensitive to the X11
+       drawing as @racket[make-platform-bitmap] on Windows or Mac OS, but possibly scaled, and it may be scaled or sensitive to the X11
        server on Unix.
  
-       On Mac OS X, when the main screen is in Retina mode (at the
+       On Mac OS, when the main screen is in Retina mode (at the
        time that the bitmap is created), the bitmap is also internally
        scaled so that one drawing unit uses two pixels. Similarly, on
        Windows or Unix, when the main display's text scale is configured at
@@ -775,7 +774,7 @@ Different kinds of bitmaps can produce different results:
 
  @item{A bitmap produced by @xmethod[canvas% make-bitmap] from
        @racketmodname[racket/gui/base] is like a bitmap from
-       @racket[make-screen-bitmap], but on Mac OS X, the bitmap is
+       @racket[make-screen-bitmap], but on Mac OS, the bitmap is
        optimized for drawing to the screen (by taking advantage of
        system APIs that can, in turn, take advantage of graphics
        hardware).

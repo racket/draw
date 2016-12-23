@@ -44,7 +44,7 @@ Reports whether the configuration requests double buffering or not.
 @defmethod[(get-hires-mode)
            boolean?]{
 
-Determines whether to use hires mode. On Mac OS X, hires mode means that the
+Determines whether to use hires mode. On Mac OS, hires mode means that the
 created OpenGL contexts will have access to the full Retina resolution
 and will not be scaled by the drawing system. On other platforms, hires mode
 has no effect.
@@ -56,7 +56,7 @@ has no effect.
            boolean?]{
 
 Determines whether to use legacy ``Compatibility'' OpenGL or ``Core'' OpenGL.
-Core OpenGL profiles are currently supported on Mac OS X (version 10.7 and up)
+Core OpenGL profiles are currently supported on Mac OS (version 10.7 and up)
 and Linux (if the graphics drivers support them).
 
 @history[#:added "1.2"]}
@@ -168,7 +168,7 @@ is also shares objects with every other context sharing with
 
 If an OpenGL implementation does not support sharing, @racket[context]
 is effectively ignored when a new context is created.
-Sharing should be supported in all versions of Mac OS X.
+Sharing should be supported in all versions of Mac OS.
 On Windows and Linux, sharing is provided by the presence of the
 @tt{WGL_ARB_create_context} and @tt{GLX_ARB_create_context} extensions,
 respectively (and OpenGL 3.2 requires both).

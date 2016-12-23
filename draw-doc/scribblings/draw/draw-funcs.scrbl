@@ -171,7 +171,7 @@ When @racket[stipple] is @racket[#f], @racket[immutable?] is true, and
 
 Creates a bitmap that uses platform-specific drawing operations
 as much as possible, which is different than a @racket[make-bitmap] result
-on Windows and Mac OS X. See @secref["Portability"] for more information.
+on Windows and Mac OS. See @secref["Portability"] for more information.
 
 @history[#:changed "1.1" @elem{Added the @racket[#:backing-scale]
 optional argument.}]}

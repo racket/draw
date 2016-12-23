@@ -257,7 +257,7 @@
 ;; a cache for the hash-table lookup.
 (define font-maps (make-vector 8 #f))
 
-;; This hook is used for Mac OS X control font access:
+;; This hook is used for Mac OS control font access:
 (define font-map-init-hook void)
 (define (set-font-map-init-hook! proc)
   (set! font-map-init-hook proc)

@@ -11,7 +11,7 @@ A @racket[gl-context<%>] object represents a context for drawing with
 
 Only canvas @racket[dc<%>] and @racket[bitmap-dc%] objects containing
  a bitmap from @racket[make-gl-bitmap] support OpenGL (always on
- Windows and Mac OS X, sometimes on Unix).  Normal @racket[dc<%>]
+ Windows and Mac OS, sometimes on Unix).  Normal @racket[dc<%>]
  drawing and OpenGL drawing can be mixed in a @racket[bitmap-dc%], but
  a canvas that uses the @racket['gl] style to support OpenGL does not
  reliably support normal @racket[dc<%>] drawing; use a bitmap if you
@@ -83,7 +83,7 @@ pointer represents depends on the platform:
 
 @itemize[
 @item{Windows: @tt{HGLRC}}
-@item{Mac OS X: @tt{NSOpenGLContext}}
+@item{Mac OS: @tt{NSOpenGLContext}}
 @item{Unix: @tt{GLXContext}}
 ]
 
