@@ -26,8 +26,9 @@
 	 the-color-database
          font-list% the-font-list make-font
          font-name-directory<%> the-font-name-directory
-	 the-pen-list
-         the-brush-list
+	 (contract-out
+          [the-pen-list (instanceof/c pen-list%/c)]
+          [the-brush-list (instanceof/c brush-list%/c)])
          dc<%>
          recorded-datum->procedure
          ps-setup% current-ps-setup
@@ -35,10 +36,32 @@
          get-family-builtin-face
          gl-context<%>
          get-current-gl-context
-         make-bitmap
-         make-platform-bitmap
-         read-bitmap
-         make-monochrome-bitmap
+         (contract-out
+          [make-bitmap ((exact-positive-integer?
+                         exact-positive-integer?)
+                        (any/c
+                         #:backing-scale (>/c 0.0))
+                        . ->* . (instanceof/c bitmap%/c))]
+          [make-platform-bitmap ((exact-positive-integer?
+                                  exact-positive-integer?)
+                                 (#:backing-scale (>/c 0.0))
+                                 . ->* . (instanceof/c bitmap%/c))]
+          [make-monochrome-bitmap ((exact-positive-integer?
+                                    exact-positive-integer?)
+                                   ((or/c #f bytes?))
+                                   . ->* . (instanceof/c bitmap%/c))]
+          [read-bitmap (((or/c path-string? input-port?))
+                        ((or/c 'unknown 'unknown/mask 'unknown/alpha
+                               'gif 'gif/mask 'gif/alpha
+                               'jpeg 'jpeg/alpha
+                               'png 'png/mask 'png/alpha
+                               'xbm 'xbm/alpha 'xpm 'xpm/alpha
+                               'bmp 'bmp/alpha)
+                         (or/c (is-a?/c color%) #f)
+                         any/c
+                         #:backing-scale (>/c 0.0)
+                         #:try-@2x? any/c)
+                        . ->* . (instanceof/c bitmap%/c))])
 
          ;; predicates/contracts
          brush-style/c
