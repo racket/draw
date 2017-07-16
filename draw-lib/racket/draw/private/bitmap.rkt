@@ -606,10 +606,15 @@
              (if (or alt?
                      (and (not unscaled?)
                           (not (= backing-scale 1))))
-                 (call-with-alt-bitmap
-                  0 0 width height (if unscaled? 1 backing-scale)
-                  (lambda (bm)
-                    (send bm save-file out kind quality)))
+                 (let ([s (lambda (v)
+                            (if (or (not unscaled?)
+                                    (= backing-scale 1))
+                                v
+                                (inexact->exact (ceiling (* v backing-scale)))))])
+                   (call-with-alt-bitmap
+                    0 0 (s width) (s height) (if unscaled? 1 backing-scale)
+                    (lambda (bm)
+                      (send bm save-file out kind quality))))
                  (do-save-file out kind quality))
              #t)))
 
