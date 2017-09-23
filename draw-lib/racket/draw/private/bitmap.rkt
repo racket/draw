@@ -2,10 +2,10 @@
 (require racket/class
          racket/unsafe/ops
          file/convertible
+         ffi/unsafe
          (for-syntax racket/base)
          "syntax.rkt"
          "hold.rkt"
-         "../unsafe/bstr.rkt"
          "../unsafe/cairo.rkt"
          "../unsafe/png.rkt"
          "../unsafe/jpeg.rkt"
@@ -152,6 +152,10 @@
 (define (*i x y) (inexact->exact (ceiling (* x y))))
 (define (/i x y) (inexact->exact (ceiling (/ x y))))
 
+(define (pointer-fill! p v n)
+  (for ([i (in-range n)])
+    (ptr-set! p _ubyte i v)))
+
 (define bitmap%
   (class* object% (png-convertible<%>)
 
@@ -217,17 +221,22 @@
            (cond
             [(not (zero? (cairo_surface_status s)))
              #f]
-            [(cairo_image_surface_get_data s)
+            [(cairo_image_surface_get_data* s)
              (cond
               [b&w?
                ;; Init transparent white:
                (transparent-white! s w h)]
               [alpha?
                ;; Init transparent:
-               (bytes-fill! (cairo_image_surface_get_data s) 0)]
+               (pointer-fill! (cairo_image_surface_get_data* s)
+                              0
+                              (* (cairo_image_surface_get_height s)
+                                 (cairo_image_surface_get_stride s)))]
               [else
                ;; Init all white, 255 alpha:
-               (bytes-fill! (cairo_image_surface_get_data s) 255)])
+               (pointer-fill! (cairo_image_surface_get_data* s) 255
+                              (* (cairo_image_surface_get_height s)
+                                 (cairo_image_surface_get_stride s)))])
              (cairo_surface_mark_dirty s)
              s]
             [else
@@ -252,22 +261,22 @@
                       (let ([w (cairo_image_surface_get_width s)]
                             [h (cairo_image_surface_get_height s)]
                             [row-width (cairo_image_surface_get_stride s)]
-                            [bstr (cairo_image_surface_get_data s)]
+                            [bstr (cairo_image_surface_get_data* s)]
                             [A (a-index)])
                         (begin0
                          (and mask?
                               ;; Move alpha channel to a separate mask bitmap
                               (let ([b&w? (for*/and ([j (in-range h)]
                                                      [i (in-range w)])
-                                                    (let ([v (bytes-ref bstr (+ A (* 4 i) (* j row-width)))])
-                                                      (or (= v 0) (= v 255))))])
+                                            (let ([v (ptr-ref bstr _ubyte (+ A (* 4 i) (* j row-width)))])
+                                              (or (= v 0) (= v 255))))])
                                 (let ([mask-bm (make-object bitmap% w h b&w?)])
                                   (send mask-bm set-alphas-as-mask 0 0 w h bstr row-width A w h)
                                   mask-bm)))
                          ;; Force all alpha values to 255
                          (for* ([j (in-range h)]
                                 [i (in-range w)])
-                           (bytes-set! bstr (+ A (* 4 i) (* j row-width)) 255))
+                           (ptr-set! bstr _ubyte (+ A (* 4 i) (* j row-width)) 255))
                          (cairo_surface_mark_dirty s))))])
             (if s
                 (values #f
@@ -459,7 +468,7 @@
                         (let* ([s (cairo_image_surface_create CAIRO_FORMAT_ARGB32 w h)]
                                [dest (begin
                                        (cairo_surface_flush s)
-                                       (cairo_image_surface_get_data s))]
+                                       (cairo_image_surface_get_data* s))]
                                [dest-row-width (cairo_image_surface_get_stride s)])
                           (for ([j (in-range h)])
                             (jpeg_read_scanlines d samps 1)
@@ -467,16 +476,16 @@
                               (for ([i (in-range w)])
                                 (let ([4i (fx+ row (fx* 4 i))]
                                       [ci (fx* c i)])
-                                  (unsafe-bytes-set! dest (fx+ 4i A) 255)
+                                  (ptr-set! dest _ubyte (fx+ 4i A) 255)
                                   (if (= c 1)
-                                      (let ([v (unsafe-bytes-ref bstr ci)])
-                                        (unsafe-bytes-set! dest (fx+ 4i R) v)
-                                        (unsafe-bytes-set! dest (fx+ 4i G) v)
-                                        (unsafe-bytes-set! dest (fx+ 4i B) v))
+                                      (let ([v (ptr-ref bstr _ubyte ci)])
+                                        (ptr-set! dest _ubyte (fx+ 4i R) v)
+                                        (ptr-set! dest _ubyte (fx+ 4i G) v)
+                                        (ptr-set! dest _ubyte (fx+ 4i B) v))
                                       (begin
-                                        (unsafe-bytes-set! dest (fx+ 4i R) (unsafe-bytes-ref bstr ci))
-                                        (unsafe-bytes-set! dest (fx+ 4i G) (unsafe-bytes-ref bstr (fx+ ci 1)))
-                                        (unsafe-bytes-set! dest (fx+ 4i B) (unsafe-bytes-ref bstr (fx+ ci 2)))))))))
+                                        (ptr-set! dest _ubyte (fx+ 4i R) (ptr-ref bstr _ubyte ci))
+                                        (ptr-set! dest _ubyte (fx+ 4i G) (ptr-ref bstr _ubyte (fx+ ci 1)))
+                                        (ptr-set! dest _ubyte (fx+ 4i B) (ptr-ref bstr _ubyte (fx+ ci 2)))))))))
                           (cairo_surface_mark_dirty s)
                           (jpeg_finish_decompress d)
                           (values s #f)))))
@@ -537,7 +546,7 @@
     (define/private (install-bytes-rows s w h rows b&w? alpha? pre? backward?)
       (let* ([dest (begin
                      (cairo_surface_flush s)
-                     (cairo_image_surface_get_data s))]
+                     (cairo_image_surface_get_data* s))]
              [dest-row-width (cairo_image_surface_get_stride s)]
              [m (and pre? (get-mult-table))])
         (let-values ([(A R G B) (argb-indices)])
@@ -555,10 +564,10 @@
                                     0
                                     255)]
                              [v (if backward? (- 255 v) v)])
-                        (unsafe-bytes-set! dest (fx+ pos A) (- 255 v))
-                        (unsafe-bytes-set! dest (fx+ pos 1) v)
-                        (unsafe-bytes-set! dest (fx+ pos 2) v)
-                        (unsafe-bytes-set! dest (fx+ pos B) v))))
+                        (ptr-set! dest _ubyte (fx+ pos A) (- 255 v))
+                        (ptr-set! dest _ubyte (fx+ pos 1) v)
+                        (ptr-set! dest _ubyte (fx+ pos 2) v)
+                        (ptr-set! dest _ubyte (fx+ pos B) v))))
                   (for ([i (in-range w)])
                     (let* ([4i (fx* 4 i)]
                            [pos (fx+ row 4i)]
@@ -572,10 +581,10 @@
                                       (if m
                                           (unsafe-bytes-ref m (fx+ (fx* al 256) v))
                                           v))])
-                      (unsafe-bytes-set! dest (fx+ pos A) al)
-                      (unsafe-bytes-set! dest (fx+ pos R) (premult al (unsafe-bytes-ref r spos)))
-                      (unsafe-bytes-set! dest (fx+ pos G) (premult al (unsafe-bytes-ref r (fx+ spos 1))))
-                      (unsafe-bytes-set! dest (fx+ pos B) (premult al (unsafe-bytes-ref r (fx+ spos 2))))))))))
+                      (ptr-set! dest _ubyte (fx+ pos A) al)
+                      (ptr-set! dest _ubyte (fx+ pos R) (premult al (unsafe-bytes-ref r spos)))
+                      (ptr-set! dest _ubyte (fx+ pos G) (premult al (unsafe-bytes-ref r (fx+ spos 1))))
+                      (ptr-set! dest _ubyte (fx+ pos B) (premult al (unsafe-bytes-ref r (fx+ spos 2))))))))))
         (cairo_surface_mark_dirty s)))
 
     (define/private (call-with-alt-bitmap x y w h sc proc)
@@ -632,7 +641,7 @@
                (let* ([b (ceiling (/ width 8))]
                       [rows (build-vector height (lambda (i) (make-bytes b)))]
                       [data (begin (surface-flush)
-                                   (cairo_image_surface_get_data s))]
+                                   (cairo_image_surface_get_data* s))]
                       [row-width (cairo_image_surface_get_stride s)])
                  (for ([j (in-range height)])
                    (let ([row (vector-ref rows j)])
@@ -643,7 +652,7 @@
                         (let ([src (+ (* j row-width) (* (* bi 8) 4))])
                           (for/fold ([v 0]) ([k (in-range 8)])
                             (if ((+ (* 8 bi) k) . < . width)
-                                (if (zero? (bytes-ref data (+ src 3 (* 4 k))))
+                                (if (zero? (ptr-ref data _ubyte (+ src 3 (* 4 k))))
                                     (bitwise-ior v (unsafe-fxrshift 128 k))
                                     v)
                                 v)))))))
@@ -701,7 +710,7 @@
                      (let-values ([(samps bstr) (create-jpeg-sample-array c (* width 3))]
                                   [(A R G B) (argb-indices)])
                        (cairo_surface_flush s)
-                       (let* ([dest (cairo_image_surface_get_data s)]
+                       (let* ([dest (cairo_image_surface_get_data* s)]
                               [dest-row-width (cairo_image_surface_get_stride s)]
                               [h height]
                               [w width])
@@ -710,9 +719,9 @@
                              (for ([i (in-range w)])
                                (let ([4i (* 4 i)]
                                      [ci (* 3 i)])
-                                 (bytes-set! bstr ci (bytes-ref dest (+ row (+ 4i R))))
-                                 (bytes-set! bstr (+ ci 1) (bytes-ref dest (+ row (+ 4i G))))
-                                 (bytes-set! bstr (+ ci 2) (bytes-ref dest (+ row (+ 4i B)))))))
+                                 (ptr-set! bstr _ubyte ci (ptr-ref dest _ubyte (+ row (+ 4i R))))
+                                 (ptr-set! bstr _ubyte (+ ci 1) (ptr-ref dest _ubyte (+ row (+ 4i G))))
+                                 (ptr-set! bstr _ubyte (+ ci 2) (ptr-ref dest _ubyte (+ row (+ 4i B)))))))
                            (jpeg_write_scanlines c samps 1))))
                      (jpeg_finish_compress c))
                    (lambda () (destroy-compress c))))]
@@ -796,7 +805,7 @@
       (when (not get-alpha?)
         (let-values ([(A R G B) (argb-indices)])
           (surface-flush)
-          (let ([data (cairo_image_surface_get_data s)]
+          (let ([data (cairo_image_surface_get_data* s)]
                 [row-width (cairo_image_surface_get_stride s)]
                 [um (and (or (and alpha-channel? (not pre-mult?)) b&w?)
                          (get-unmult-table))]
@@ -811,7 +820,7 @@
                        [pi-end (+ p (* 4 (- w2 x)))])
                   (for ([ri (in-range ri-start ri-end 4)]
                         [pi (in-range pi-start pi-end 4)])
-                    (let ([a (unsafe-bytes-ref data (+ ri A))])
+                    (let ([a (ptr-ref data _ubyte (+ ri A))])
                       (let-syntax ([unmult
                                     ;; Defined as a macro to copy the
                                     ;; `unsafe-bytes-ref' to each branch,
@@ -823,9 +832,9 @@
                                            v)])])
                         (when set-alpha?
                           (unsafe-bytes-set! bstr pi a))
-                        (unsafe-bytes-set! bstr (+ pi 1) (unmult (unsafe-bytes-ref data (+ ri R))))
-                        (unsafe-bytes-set! bstr (+ pi 2) (unmult (unsafe-bytes-ref data (+ ri G))))
-                        (unsafe-bytes-set! bstr (+ pi 3) (unmult (unsafe-bytes-ref data (+ ri B)))))))))))))
+                        (unsafe-bytes-set! bstr (+ pi 1) (unmult (ptr-ref data _ubyte (+ ri R))))
+                        (unsafe-bytes-set! bstr (+ pi 2) (unmult (ptr-ref data _ubyte (+ ri G))))
+                        (unsafe-bytes-set! bstr (+ pi 3) (unmult (ptr-ref data _ubyte (+ ri B)))))))))))))
       (cond
        [get-alpha?
         (get-alphas-as-mask x y w h bstr width height)]
@@ -875,7 +884,7 @@
                      [(height) (if unscaled? (*i height backing-scale) height)])
           (when (not set-alpha?)
             (surface-flush)
-            (let ([data (cairo_image_surface_get_data s)]
+            (let ([data (cairo_image_surface_get_data* s)]
                   [row-width (cairo_image_surface_get_stride s)]
                   [m (and (not pre-mult?) (get-mult-table))])
               (define-syntax-rule (set-loop body)
@@ -898,22 +907,22 @@
                                      (= (unsafe-bytes-ref bstr (+ pi 3)) 255))
                                 255
                                 0)])
-                     (unsafe-bytes-set! data (unsafe-fx+ ri A) (- 255 v))
-                     (unsafe-bytes-set! data (unsafe-fx+ ri 1) v)
-                     (unsafe-bytes-set! data (unsafe-fx+ ri 2) v)
-                     (unsafe-bytes-set! data (unsafe-fx+ ri B) v))))]
+                     (ptr-set! data _ubyte (unsafe-fx+ ri A) (- 255 v))
+                     (ptr-set! data _ubyte (unsafe-fx+ ri 1) v)
+                     (ptr-set! data _ubyte (unsafe-fx+ ri 2) v)
+                     (ptr-set! data _ubyte (unsafe-fx+ ri B) v))))]
                [alpha-channel?
                 (define-syntax-rule (alpha-set-loop pm)
                   (set-loop
                    (lambda (pi ri)
                      (let ([a (bytes-ref bstr pi)])
-                       (unsafe-bytes-set! data (unsafe-fx+ ri A) a)
-                       (unsafe-bytes-set! data (unsafe-fx+ ri R)
-                                          (pm a (unsafe-bytes-ref bstr (unsafe-fx+ pi 1))))
-                       (unsafe-bytes-set! data (unsafe-fx+ ri G)
-                                          (pm a (unsafe-bytes-ref bstr (unsafe-fx+ pi 2))))
-                       (unsafe-bytes-set! data (unsafe-fx+ ri B)
-                                          (pm a (unsafe-bytes-ref bstr (unsafe-fx+ pi 3))))))))
+                       (ptr-set! data _ubyte (unsafe-fx+ ri A) a)
+                       (ptr-set! data _ubyte (unsafe-fx+ ri R)
+                                 (pm a (unsafe-bytes-ref bstr (unsafe-fx+ pi 1))))
+                       (ptr-set! data _ubyte (unsafe-fx+ ri G)
+                                 (pm a (unsafe-bytes-ref bstr (unsafe-fx+ pi 2))))
+                       (ptr-set! data _ubyte (unsafe-fx+ ri B)
+                                 (pm a (unsafe-bytes-ref bstr (unsafe-fx+ pi 3))))))))
                 (if m
                     (alpha-set-loop (lambda (a v)
                                       (unsafe-bytes-ref m (unsafe-fx+ (unsafe-fx* a 256) v))))
@@ -921,12 +930,12 @@
                [else
                 (set-loop
                  (lambda (pi ri)
-                   (unsafe-bytes-set! data (unsafe-fx+ ri R)
-                                      (unsafe-bytes-ref bstr (unsafe-fx+ pi 1)))
-                   (unsafe-bytes-set! data (unsafe-fx+ ri G)
-                                      (unsafe-bytes-ref bstr (unsafe-fx+ pi 2)))
-                   (unsafe-bytes-set! data (unsafe-fx+ ri B)
-                                      (unsafe-bytes-ref bstr (unsafe-fx+ pi 3)))))]))
+                   (ptr-set! data _ubyte (unsafe-fx+ ri R)
+                             (unsafe-bytes-ref bstr (unsafe-fx+ pi 1)))
+                   (ptr-set! data _ubyte (unsafe-fx+ ri G)
+                             (unsafe-bytes-ref bstr (unsafe-fx+ pi 2)))
+                   (ptr-set! data _ubyte (unsafe-fx+ ri B)
+                             (unsafe-bytes-ref bstr (unsafe-fx+ pi 3)))))]))
             (cairo_surface_mark_dirty s)))
         (cond
          [(and set-alpha?
@@ -938,14 +947,14 @@
         (drop-alpha-s)]))
 
     (define/public (get-alphas-as-mask x y w h bstr width height)
-      (let ([data (cairo_image_surface_get_data (if (or b&w? alpha-channel?)
-                                                    (begin
-                                                      (surface-flush)
-                                                      s)
-                                                    (begin
-                                                      (prep-alpha width height)
-                                                      (cairo_surface_flush alpha-s)
-                                                      alpha-s)))]
+      (let ([data (cairo_image_surface_get_data* (if (or b&w? alpha-channel?)
+                                                     (begin
+                                                       (surface-flush)
+                                                       s)
+                                                     (begin
+                                                       (prep-alpha width height)
+                                                       (cairo_surface_flush alpha-s)
+                                                       alpha-s)))]
             [row-width (cairo_image_surface_get_stride s)]
             [A (a-index)])
         (for ([j (in-range y (min (+ y h) height))])
@@ -953,7 +962,7 @@
             (for ([i (in-range x (min (+ x w) width))])
               (let ([p (* 4 (+ (- i x) (* (- j y) w)))]
                     [q (+ row (* i 4))])
-                (bytes-set! bstr p (bytes-ref data (+ q A)))))))))
+                (bytes-set! bstr p (ptr-ref data _ubyte (+ q A)))))))))
 
     (define/public (prep-alpha width height)
       (when (and (not b&w?)
@@ -965,8 +974,8 @@
                                                       width height)))
           (surface-flush)
           (cairo_surface_flush alpha-s)
-          (let ([data (cairo_image_surface_get_data s)]
-                [alpha-data (cairo_image_surface_get_data alpha-s)]
+          (let ([data (cairo_image_surface_get_data* s)]
+                [alpha-data (cairo_image_surface_get_data* alpha-s)]
                 [row-width (cairo_image_surface_get_stride s)]
                 [A (a-index)]
                 [B (b-index)])
@@ -975,27 +984,29 @@
                 (for ([i (in-range width)])
                   (let ([q (+ row (* i 4))])
                     (let ([v (quotient
-                              (+ (+ (bytes-ref data (+ q 1))
-                                    (bytes-ref data (+ q 2)))
-                                 (bytes-ref data (+ q B)))
+                              (+ (+ (ptr-ref data _ubyte (+ q 1))
+                                    (ptr-ref data _ubyte (+ q 2)))
+                                 (ptr-ref data _ubyte (+ q B)))
                               3)])
-                      (bytes-set! alpha-data (+ q A) (- 255 v))))))))
+                      (ptr-set! alpha-data _ubyte (+ q A) (- 255 v))))))))
           (cairo_surface_mark_dirty alpha-s)
           (set! alpha-s-up-to-date? #t))))
 
     (define/private (transparent-white! s width height)
-      (let ([bstr (cairo_image_surface_get_data s)]
+      (let ([bstr (cairo_image_surface_get_data* s)]
             [row-width (cairo_image_surface_get_stride s)]
             [A (a-index)])
-        (bytes-fill! bstr 255)
+        (pointer-fill! bstr 255 (* (cairo_image_surface_get_height s)
+                                   (cairo_image_surface_get_stride s)))
         (for ([j (in-range height)])
           (let ([row (* j row-width)])
             (for ([i (in-range width)])
-              (bytes-set! bstr (+ A (+ row (* i 4))) 0))))))
+              (ptr-set! bstr _ubyte (+ A (+ row (* i 4))) 0))))))
 
     (define/public (set-alphas-as-mask x y w h bstr src-w src-A width height)
       (when (or b&w? (and (not b&w?) (not alpha-channel?)))
-        (let ([data (cairo_image_surface_get_data s)]
+        (let ([src (if (bytes? bstr) (cast bstr _bytes _pointer) bstr)]
+              [data (cairo_image_surface_get_data* s)]
               [row-width (cairo_image_surface_get_stride s)]
               [A (a-index)]
               [B (b-index)])
@@ -1006,12 +1017,12 @@
               (for ([i (in-range x (min (+ x w) width))])
                 (let* ([p (+ (* 4 (- i x)) src-row)]
                        [q (+ (* 4 i) row)])
-                  (let* ([v (bytes-ref bstr (+ p src-A))]
+                  (let* ([v (ptr-ref src _ubyte (+ p src-A))]
                          [vv (- 255 v)])
-                    (bytes-set! data (+ q B) vv)
-                    (bytes-set! data (+ q 1) vv)
-                    (bytes-set! data (+ q 2) vv)
-                    (bytes-set! data (+ q A) (if b&w? v 255)))))))
+                    (ptr-set! data _ubyte (+ q B) vv)
+                    (ptr-set! data _ubyte (+ q 1) vv)
+                    (ptr-set! data _ubyte (+ q 2) vv)
+                    (ptr-set! data _ubyte (+ q A) (if b&w? v 255)))))))
           (cairo_surface_mark_dirty s))))))
 
 (define/top (make-bitmap [exact-positive-integer? w]

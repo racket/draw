@@ -370,6 +370,9 @@
                                                  -> (_bytes o
                                                             (* (cairo_image_surface_get_height s)
                                                                (cairo_image_surface_get_stride s)))))
+(define-cairo cairo_image_surface_get_data* (_cfun (s : _cairo_surface_t)
+                                                   -> _pointer)
+  #:c-id cairo_image_surface_get_data)
 (define-cairo cairo_image_surface_get_width (_cfun _cairo_surface_t -> _int))
 (define-cairo cairo_image_surface_get_height (_cfun _cairo_surface_t -> _int))
 (define-cairo cairo_image_surface_get_stride (_cfun _cairo_surface_t -> _int))

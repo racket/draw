@@ -2,7 +2,6 @@
 (require ffi/unsafe
          ffi/unsafe/define
          ffi/unsafe/alloc
-         "bstr.rkt"
          "../private/utils.rkt"
          "../private/libs.rkt")
 
@@ -553,7 +552,7 @@
 (define (fill-input-buffer m)
   (let* ([s (jpeg_decompress_struct-src m)]
          [b (jpeg_source_mgr-buffer s)]
-         [bstr (scheme_make_sized_byte_string b BUFFER-SIZE 0)]
+         [bstr (make-bytes BUFFER-SIZE)]
          [in (car (ptr-ref (jpeg_decompress_struct-client_data m) _scheme))])
     (let* ([len (read-bytes! bstr in)]
            [len (if (zero? len)
@@ -562,6 +561,7 @@
                       (bytes-set! bstr 1 JPEG_EOI)
                       2)
                     len)])
+      (memcpy b bstr len)
       (set-jpeg_source_mgr-next_input_byte! s b)
       (set-jpeg_source_mgr-bytes_in_buffer! s len)
       #t)))
@@ -591,12 +591,11 @@
 (define (do-empty-output-buffer m all?)
   (let* ([d (jpeg_compress_struct-dest m)]
          [b (jpeg_destination_mgr-buffer d)]
-         [bstr (scheme_make_sized_byte_string b 
-                                              (if all?
-                                                  BUFFER-SIZE
-                                                  (- BUFFER-SIZE (jpeg_destination_mgr-free_in_buffer d)))
-                                              0)]
+         [bstr (make-bytes (if all?
+                               BUFFER-SIZE
+                               (- BUFFER-SIZE (jpeg_destination_mgr-free_in_buffer d))))]
          [out (car (ptr-ref (jpeg_compress_struct-client_data m) _scheme))])
+    (memcpy bstr b (bytes-length bstr))
     (write-bytes bstr out)
     (set-jpeg_destination_mgr-next_output_byte! d b)
     (set-jpeg_destination_mgr-free_in_buffer! d BUFFER-SIZE)
@@ -702,7 +701,7 @@
                 JPOOL_IMAGE
                 len
                 1)])
-    (values samps (scheme_make_sized_byte_string (ptr-ref samps _pointer) len 0))))
+    (values samps  (ptr-ref samps _pointer))))
 
 (define-jpeg/private jpeg_CreateDecompress (_fun _j_decompress_ptr _int _int -> _void))
 (define-jpeg/private jpeg_resync_to_restart _fpointer) ; (_fun _j_decompress_ptr _int -> _jbool))

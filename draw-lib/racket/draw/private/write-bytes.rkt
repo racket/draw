@@ -1,6 +1,6 @@
 #lang racket/base
-(require "../unsafe/cairo.rkt"
-         "../unsafe/bstr.rkt")
+(require ffi/unsafe
+         "../unsafe/cairo.rkt")
 
 (provide make-port-writer
          port-writer-wait)
@@ -15,8 +15,9 @@
                     (loop))))))])
     (values t
             (lambda (bytes len)
-              (thread-send t (scheme_make_sized_byte_string bytes len 1) 
-                           void)
+              (define bstr (make-bytes len))
+              (memcpy bstr bytes len)
+              (thread-send t bstr void)
               CAIRO_STATUS_SUCCESS))))
 
 (define (port-writer-wait t)
