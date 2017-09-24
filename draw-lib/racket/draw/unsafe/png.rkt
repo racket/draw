@@ -319,9 +319,10 @@
     (png_read_end (reader-png reader) (reader-info reader))
     (list->vector
      (for/list ([i (in-range (reader-h reader))])
-       (define p (ptr-ref rows _gcpointer i))
+       (define p (ptr-ref rows _pointer i))
        (define bstr (make-bytes row-bytes))
        (memcpy bstr p row-bytes)
+       (void/reference-sink rows) ; keep alive until memcpy is done
        bstr))))
 
 (define (destroy-png-reader reader)
@@ -373,7 +374,7 @@
              [w (bytes-length (vector-ref vector-of-rows 0))]
              [rows (malloc-rows h w)])
         (for/list ([i (in-range h)])
-          (memcpy (ptr-ref rows _gcpointer i)
+          (memcpy (ptr-ref rows _pointer i)
                   (vector-ref vector-of-rows i)
                   w))
         (png_write_image (writer-png writer) rows)))
