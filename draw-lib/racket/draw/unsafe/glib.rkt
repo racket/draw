@@ -42,4 +42,6 @@
 
 ;; Route glib logging to Racket logging:
 (define-glib g_log_set_default_handler (_fun _fpointer _pointer -> _fpointer))
-(void (g_log_set_default_handler (get-ffi-obj 'scheme_glib_log_message #f _fpointer) #f))
+(let ([f (get-ffi-obj 'scheme_glib_log_message #f _fpointer (lambda () #f))])
+  (when f
+    (void (g_log_set_default_handler f #f))))
