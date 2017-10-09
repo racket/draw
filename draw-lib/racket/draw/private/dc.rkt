@@ -1059,23 +1059,33 @@
             (unless (or (eq? s 'solid)
                         (eq? s 'xor))
               (cairo_set_dash cr
-                              (let ([vec (cond
-                                          [(eq? s 'long-dash)
-                                           #(4.0 2.0)]
-                                          [(eq? s 'short-dash)
-                                           #(2.0 2.0)]
-                                          [(eq? s 'dot)
-                                           #(1.0 2.0)]
-                                          [(eq? s 'dot-dash)
-                                           #(1.0 2.0 4.0 2.0)]
-                                          [else
-                                           #()])])
-                                (let ([w (send pen get-width)])
-                                  (if (w . > . 1.0)
+                              (let ([w (send pen get-width)])
+                                (if (w . > . 1.0)
+                                    (let ([vec (cond
+                                                 [(eq? s 'long-dash)
+                                                  #(4.0 2.0)]
+                                                 [(eq? s 'short-dash)
+                                                  #(2.0 2.0)]
+                                                 [(eq? s 'dot)
+                                                  #(1.0 2.0)]
+                                                 [(eq? s 'dot-dash)
+                                                  #(1.0 2.0 4.0 2.0)]
+                                                 [else
+                                                  #()])])
                                       (list->vector
                                        (for/list ([a (in-vector vec)])
-                                         (* a w)))
-                                      vec)))
+                                         (* a w))))
+                                    (cond
+                                      [(eq? s 'long-dash)
+                                       #(4.0 4.0)]
+                                      [(eq? s 'short-dash)
+                                       #(2.0 4.0)]
+                                      [(eq? s 'dot)
+                                       #(1.0 4.0)]
+                                      [(eq? s 'dot-dash)
+                                       #(1.0 4.0 4.0 4.0)]
+                                      [else
+                                       #()])))
                               (cond
                                [(eq? s 'long-dash) 2]
                                [(eq? s 'short-dash) 2]
