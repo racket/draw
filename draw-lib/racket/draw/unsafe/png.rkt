@@ -52,8 +52,10 @@
 (define-png png_create_read_struct
   (_fun _bytes
         _pointer
-        (_fun _png_structp _string -> _void)
-        (_fun _png_structp _string -> _void)
+        (_fun #:keep (lambda (v) ((current-fun-keep) v))
+              _png_structp _string -> _void)
+        (_fun #:keep (lambda (v) ((current-fun-keep) v))
+              _png_structp _string -> _void)
         -> _png_structp))
 
 (define png_destroy_read_struct1
@@ -74,8 +76,10 @@
 (define-png png_create_write_struct
   (_fun _bytes
         _pointer
-        (_fun _png_structp _string -> _void)
-        (_fun _png_structp _string -> _void)
+        (_fun #:keep (lambda (v) ((current-fun-keep) v))
+              _png_structp _string -> _void)
+        (_fun #:keep (lambda (v) ((current-fun-keep) v))
+              _png_structp _string -> _void)
         -> _png_structp))
 (define png_destroy_write_struct1
   (get-ffi-obj 'png_destroy_write_struct
@@ -223,12 +227,14 @@
 (define make-cell ((allocator free-cell) malloc-immobile-cell))
 
 (define (create-png-reader in keep-alpha? bg-rgb)
-  (let* ([png (png_create_read_struct PNG_LIBPNG_VER_STRING #f error-esc void)]
+  (let* ([funs (box null)]
+         [fun-keep (lambda (v)
+                     (set-box! funs (cons v (unbox funs))))]
+         [png (parameterize ([current-fun-keep fun-keep])
+                (png_create_read_struct PNG_LIBPNG_VER_STRING #f error-esc void))]
          [info (png_create_info_struct png)]
-         [funs (box null)]
          [ib (make-cell (cons in funs))])
-    (parameterize ([current-fun-keep (lambda (v)
-                                       (set-box! funs (cons v (unbox funs))))])
+    (parameterize ([current-fun-keep fun-keep])
       (png_set_read_fn png ib read-png-bytes))
     (png_read_info png info)
     (let-values ([(w h depth color-type
@@ -350,12 +356,14 @@
   (flush-output (car (ptr-ref (png_get_io_ptr png) _scheme))))
 
 (define (create-png-writer out w h b&w? alpha?)
-  (let* ([png (png_create_write_struct PNG_LIBPNG_VER_STRING #f error-esc void)]
+  (let* ([funs (box null)]
+         [fun-keep (lambda (v)
+                     (set-box! funs (cons v (unbox funs))))]
+         [png (parameterize ([current-fun-keep fun-keep])
+                (png_create_write_struct PNG_LIBPNG_VER_STRING #f error-esc void))]
          [info (png_create_info_struct png)]
-         [funs (box null)]
          [ob (make-cell (cons out funs))])
-    (parameterize ([current-fun-keep (lambda (v)
-                                       (set-box! funs (cons v (unbox funs))))])
+    (parameterize ([current-fun-keep fun-keep])
       (png_set_write_fn png ob write-png-bytes flush-png-bytes))
     (png_set_IHDR png info w h (if b&w? 1 8)
                   (cond
