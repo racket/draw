@@ -7,10 +7,12 @@
   (cond
     [(positive? copy)
      (define actual-len (if (= len -1)
-                            (let loop ([i 0])
-                              (cond
-                                [(zero? (ptr-ref ptr _byte i)) i]
-                                [else (loop (add1 i))]))
+                            (if ptr
+                                (let loop ([i 0])
+                                  (cond
+                                    [(zero? (ptr-ref ptr _byte i)) i]
+                                    [else (loop (add1 i))]))
+                                0)
                             len))
      (define bstr (make-bytes actual-len))
      (memcpy bstr ptr actual-len)
