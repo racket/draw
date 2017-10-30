@@ -763,6 +763,11 @@ If @racket[combine?] is @racket[#t], then @racket[text] may be drawn
 Unlike most methods, this method can be called for a
  @racket[bitmap-dc%] object without a bitmap installed.
 
+
+ @examples[
+ #:eval (make-base-eval '(require racket/class racket/draw))
+ (define text-size-dc (new bitmap-dc% [bitmap (make-object bitmap% 1 1)]))
+ (send text-size-dc get-text-extent "Pickles")]
 }
 
 
