@@ -722,7 +722,7 @@ set-text-background].
                    (and/c real? (not/c negative?)))]{
 
 
-Returns the size of @racket[str] at it would be drawn in the drawing
+Returns the size of @racket[str] as it would be drawn in the drawing
  context, starting from the @racket[offset] character of @racket[str],
  and continuing until the end of @racket[str] or the first null
  character.  The @racket[font] argument specifies the font to use in
