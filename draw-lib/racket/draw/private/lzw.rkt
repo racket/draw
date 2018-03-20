@@ -66,6 +66,7 @@
          (next-entry-index (+ clear-code 2))
          (compression-size (add1 code-size))
          (compression-threshold (* clear-code 2))
+         (just-emit? #f)
          (pos 0)
          (bitstream (make-input-bitstream bstr)))
     (for ([i (in-range clear-code)])
@@ -77,7 +78,8 @@
                   (vector-set! entries i -1))
                 (set! next-entry-index (+ clear-code 2))
                 (set! compression-size (add1 code-size))
-                (set! compression-threshold (* clear-code 2)))]
+                (set! compression-threshold (* clear-code 2))
+                (set! just-emit? #f))]
              [root-value 
               (lambda (code)
                 (let loop ([code code])
@@ -87,8 +89,15 @@
                         (loop pred)))))]
              [increase-compression-size!
               (lambda ()
-                (set! compression-size (min 12 (add1 compression-size)))
-                (set! compression-threshold (* compression-threshold 2)))]
+                (cond
+                  [(= compression-size 12)
+                   ;; 12 is the maximum compression size, so go into
+                   ;; "just emit" mode, which doesn't add new entries
+                   ;; until a reset
+                   (set! just-emit? #t)]
+                  [else
+                   (set! compression-size (add1 compression-size))
+                   (set! compression-threshold (* compression-threshold 2))]))]
              [add-entry 
               (lambda (entry pred)
                 (when (>= pred next-entry-index)
@@ -102,7 +111,7 @@
                   result))]
              [code-depth 
               (lambda (code)
-                (let loop ([depth 0][code code])
+                (let loop ([depth 0] [code code])
                   (let ([pred (vector-ref preds code)])
                     (if (negative? pred)
                         depth
@@ -130,7 +139,7 @@
             (loop -1)]
            [(= code end-of-input)
             (void)]
-           [(= last-code -1)
+           [(or just-emit? (= last-code -1))
             (output-code-string code)
             (loop code)]
            [else
