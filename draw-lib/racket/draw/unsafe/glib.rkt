@@ -11,11 +11,11 @@
 (define-runtime-lib glib-lib
   [(unix) (ffi-lib "libglib-2.0" '("0" ""))]
   [(macosx)
-   (ffi-lib "libintl.8.dylib")
+   (ffi-lib "libintl.9.dylib")
    (ffi-lib "libglib-2.0.0.dylib")]
   [(windows)
    (ffi-lib "libiconv-2.dll")
-   (ffi-lib "libintl-8.dll")
+   (ffi-lib "libintl-9.dll")
    (ffi-lib "libglib-2.0-0.dll")])
 
 (define-runtime-lib gmodule-lib
