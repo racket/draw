@@ -29,6 +29,7 @@
    (ffi-lib "libpangoft2-1.0.0.dylib")
    (ffi-lib "libpangocairo-1.0.0.dylib")]
   [(windows)
+   (ffi-lib "libiconv-2.dll")
    (ffi-lib "libintl-9.dll")
    (ffi-lib "libpangowin32-1.0-0.dll")
    (ffi-lib "libexpat-1.dll")

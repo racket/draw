@@ -16,6 +16,7 @@
    (ffi-lib "libfontconfig.1.dylib")]
   [(windows)
    (ffi-lib "zlib1.dll")
+   (ffi-lib "libiconv-2.dll")
    (ffi-lib "libintl-9.dll")
    (ffi-lib "libpng16-16.dll")
    (ffi-lib "libexpat-1.dll")
