@@ -56,11 +56,21 @@ A @defterm{font} is an object which determines the appearance of text,
  @item{@indexed-racket['italic]}
  ]}
 
-@item{weight --- The weight of the font, one of:
+@item{weight --- The weight of the font, an exact integer between @racket[100] and @racket[1000],
+                 inclusive, or one of:
  @itemize[
- @item{@indexed-racket['normal]}
- @item{@indexed-racket['light]}
- @item{@indexed-racket['bold]}
+ @item{@indexed-racket['thin] (equivalent to @racket[100])}
+ @item{@indexed-racket['ultralight] (equivalent to @racket[200])}
+ @item{@indexed-racket['light] (equivalent to @racket[300])}
+ @item{@indexed-racket['semilight] (equivalent to @racket[350])}
+ @item{@indexed-racket['book] (equivalent to @racket[380])}
+ @item{@indexed-racket['normal] (equivalent to @racket[400])}
+ @item{@indexed-racket['medium] (equivalent to @racket[500])}
+ @item{@indexed-racket['semibold] (equivalent to @racket[600])}
+ @item{@indexed-racket['bold] (equivalent to @racket[700])}
+ @item{@indexed-racket['ultrabold] (equivalent to @racket[800])}
+ @item{@indexed-racket['heavy] (equivalent to @racket[900])}
+ @item{@indexed-racket['ultraheavy] (equivalent to @racket[1000])}
  ]}
 
 @item{underline? --- @racket[#t] for underlined, @racket[#f] for plain.}
@@ -96,7 +106,11 @@ See also
 @racket[font-name-directory<%>].
 
 @history[#:changed "1.2" @elem{Defined ``points'' as  @racket[(/ 96 72)] pixels on Windows,
-                               independent of the screen resolution.}]
+                               independent of the screen resolution.}
+         #:changed "1.14" @elem{Changed ``weight'' to allow integer values and the symbols
+                                @racket['thin], @racket['ultralight], @racket['semilight],
+                                @racket['book], @racket['medium], @racket['semibold],
+                                @racket['ultrabold], @racket['heavy], and @racket['ultraheavy].}]
 
 
 @defconstructor*/make[(()
@@ -129,7 +143,11 @@ See @racket[font%] for information about @racket[family],
 
 See also @racket[make-font].
 
-@history[#:changed "1.4" @elem{Changed @racket[size] to allow non-integer and zero values.}]}
+@history[#:changed "1.4" @elem{Changed @racket[size] to allow non-integer and zero values.}
+         #:changed "1.14" @elem{Changed @racket[weight] to allow integer values and the symbols
+                                @racket['thin], @racket['ultralight], @racket['semilight],
+                                @racket['book], @racket['medium], @racket['semibold],
+                                @racket['ultrabold], @racket['heavy], and @racket['ultraheavy].}]}
 
 
 @defmethod[(get-face)

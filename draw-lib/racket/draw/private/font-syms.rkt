@@ -13,11 +13,12 @@
   (memq s '(default decorative roman script
              swiss modern symbol system)))
 
+(define (weight-symbol? s)
+  (memq s '(thin ultralight light semilight book normal
+                 medium semibold bold ultrabold heavy ultraheavy)))
+
 (define (style-symbol? s)
   (memq s '(normal italic slant)))
-
-(define (weight-symbol? s)
-  (memq s '(normal bold light)))
 
 (define (smoothing-symbol? s)
   (memq s '(default smoothed unsmoothed partly-smoothed)))
@@ -30,7 +31,9 @@
 (define font-family/c (or/c 'default 'decorative 'roman 'script 'swiss
                             'modern 'symbol 'system))
 
-(define font-weight/c (or/c 'normal 'bold 'light))
+(define font-weight/c (or/c (integer-in 100 1000)
+                            'thin 'ultralight 'light 'semilight 'book 'normal
+                            'medium 'semibold 'bold 'ultrabold 'heavy 'ultraheavy))
 (define font-style/c  (or/c 'normal 'italic 'slant))
 (define font-smoothing/c (or/c 'default 'partly-smoothed
                                'smoothed 'unsmoothed))

@@ -108,7 +108,7 @@ or @racket[the-color-database].}
                                            'swiss 'modern 'symbol 'system)
                               'default]
                     [#:style style (or/c 'normal 'italic 'slant) 'normal]
-                    [#:weight weight (or/c 'normal 'bold 'light) 'normal]
+                    [#:weight weight font-weight/c 'normal]
                     [#:underlined? underlined? any/c #f]
                     [#:smoothing smoothing (or/c 'default 'partly-smoothed 
                                                  'smoothed 'unsmoothed) 
@@ -121,7 +121,11 @@ Creates a @racket[font%] instance. This procedure provides an
 equivalent but more convenient interface compared to using
 @racket[make-object] with @racket[font%].
 
-@history[#:changed "1.4" @elem{Changed @racket[size] to allow non-integer and zero values.}]}
+@history[#:changed "1.4" @elem{Changed @racket[size] to allow non-integer and zero values.}
+         #:changed "1.14" @elem{Changed @racket[weight] to allow integer values and the symbols
+                                @racket['thin], @racket['ultralight], @racket['semilight],
+                                @racket['book], @racket['medium], @racket['semibold],
+                                @racket['ultrabold], @racket['heavy], and @racket['ultraheavy].}]}
 
 
 @defproc[(make-monochrome-bitmap [width exact-positive-integer?]

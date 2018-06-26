@@ -13,7 +13,7 @@
 (provide font%
          font-list% the-font-list
          make-font
-         family-symbol? style-symbol? weight-symbol? smoothing-symbol? hinting-symbol?
+         family-symbol? style-symbol? smoothing-symbol? hinting-symbol?
          get-pango-attrs
          get-face-list
          (protect-out substitute-fonts?
@@ -175,11 +175,21 @@
                                                      [(normal) PANGO_STYLE_NORMAL]
                                                      [(italic) PANGO_STYLE_ITALIC]
                                                      [(slant) PANGO_STYLE_OBLIQUE])))
-          (unless (eq? weight 'normal)
+          (unless (or (eq? weight 'normal) (eqv? weight 300))
             (pango_font_description_set_weight desc (case weight
-                                                      [(normal) PANGO_WEIGHT_MEDIUM]
+                                                      [(thin) PANGO_WEIGHT_THIN]
+                                                      [(ultralight) PANGO_WEIGHT_ULTRALIGHT]
                                                       [(light) PANGO_WEIGHT_LIGHT]
-                                                      [(bold) PANGO_WEIGHT_BOLD])))
+                                                      [(semilight) PANGO_WEIGHT_SEMILIGHT]
+                                                      [(book) PANGO_WEIGHT_BOOK]
+                                                      [(normal) PANGO_WEIGHT_NORMAL]
+                                                      [(medium) PANGO_WEIGHT_MEDIUM]
+                                                      [(semibold) PANGO_WEIGHT_SEMIBOLD]
+                                                      [(bold) PANGO_WEIGHT_BOLD]
+                                                      [(ultrabold) PANGO_WEIGHT_ULTRABOLD]
+                                                      [(heavy) PANGO_WEIGHT_HEAVY]
+                                                      [(ultraheavy) PANGO_WEIGHT_ULTRAHEAVY]
+                                                      [else weight])))
           (let ([size (if size-in-pixels? size (* dpi-scale size))])
             (pango_font_description_set_absolute_size desc (* size PANGO_SCALE)))
           (install! desc)
@@ -232,7 +242,7 @@
    [([(real-in 0.0 1024.0) _size]
      [family-symbol? _family]
      [style-symbol? [_style 'normal]]
-     [weight-symbol? [_weight 'normal]]
+     [font-weight/c [_weight 'normal]]
      [any? [_underlined? #f]]
      [smoothing-symbol? [_smoothing 'default]]
      [any? [_size-in-pixels? #f]]
@@ -249,7 +259,7 @@
      [(make-or-false string?) _face]
      [family-symbol? _family]
      [style-symbol? [_style 'normal]]
-     [weight-symbol? [_weight 'normal]]
+     [font-weight/c [_weight 'normal]]
      [any? [_underlined? #f]]
      [smoothing-symbol? [_smoothing 'default]]
      [any? [_size-in-pixels? #f]]
@@ -293,7 +303,7 @@
             [([(real-in 0.0 1024.0) size]
               [family-symbol? family]
               [style-symbol? [style 'normal]]
-              [weight-symbol? [weight 'normal]]
+              [font-weight/c [weight 'normal]]
               [any? [underlined? #f]]
               [smoothing-symbol? [smoothing 'default]]
               [any? [size-in-pixels? #f]]
@@ -303,7 +313,7 @@
               [(make-or-false string?) face]
               [family-symbol? family]
               [style-symbol? [style 'normal]]
-              [weight-symbol? [weight 'normal]]
+              [font-weight/c [weight 'normal]]
               [any? [underlined? #f]]
               [smoothing-symbol? [smoothing 'default]]
               [any? [size-in-pixels? #f]]
@@ -357,7 +367,7 @@
   (unless (or (not face) (string? face)) (raise-type-error 'make-font "string or #f" face))
   (unless (family-symbol? family) (raise-type-error 'make-font "family-symbol" family))
   (unless (style-symbol? style) (raise-type-error 'make-font "style-symbol" style))
-  (unless (weight-symbol? weight) (raise-type-error 'make-font "weight-symbol" weight))
+  (unless (font-weight/c weight) (raise-argument-error 'make-font "font-weight/c" weight))
   (unless (smoothing-symbol? smoothing) (raise-type-error 'make-font "smoothing-symbol" smoothing))
   (unless (hinting-symbol? hinting) (raise-type-error 'make-font "hinting-symbol" hinting))
   (make-object font% size face family style weight underlined? smoothing size-in-pixels? hinting))

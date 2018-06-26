@@ -331,8 +331,17 @@
   PANGO_UNDERLINE_LOW
   PANGO_UNDERLINE_ERROR)
 
+(define/provide PANGO_WEIGHT_THIN 100)
+(define/provide PANGO_WEIGHT_ULTRALIGHT 200)
 (define/provide PANGO_WEIGHT_LIGHT 300)
+(define/provide PANGO_WEIGHT_SEMILIGHT 350)
+(define/provide PANGO_WEIGHT_BOOK 380)
+(define/provide PANGO_WEIGHT_NORMAL 400)
 (define/provide PANGO_WEIGHT_MEDIUM 500)
+(define/provide PANGO_WEIGHT_SEMIBOLD 600)
 (define/provide PANGO_WEIGHT_BOLD 700)
+(define/provide PANGO_WEIGHT_ULTRABOLD 800)
+(define/provide PANGO_WEIGHT_HEAVY 900)
+(define/provide PANGO_WEIGHT_ULTRAHEAVY 1000)
 
 (define/provide PANGO_SCALE 1024)
