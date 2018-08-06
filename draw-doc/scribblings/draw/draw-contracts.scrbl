@@ -28,18 +28,8 @@ and functions.
 }
 
 @defthing[font-weight/c flat-contract?]{
-  Recognizes font weights. Corresponds to the @racket[_weight]
+  Recognizes @tech{font weights}. Corresponds to the @racket[_weight]
   initialization argument of the @racket[font%] class.
-
-  Equivalent to the following definition:
-  @racketblock[(or/c (integer-in 100 1000)
-                     'thin 'ultralight 'light 'semilight 'book 'normal
-                     'medium 'semibold 'bold 'ultrabold 'heavy 'ultraheavy)]
-
-  @history[#:changed "1.14" @elem{Changed to allow integer values and the symbols @racket['thin],
-                                  @racket['ultralight], @racket['semilight], @racket['book],
-                                  @racket['medium], @racket['semibold], @racket['ultrabold],
-                                  @racket['heavy], and @racket['ultraheavy].}]
 }
 
 @defthing[font-smoothing/c flat-contract?]{
