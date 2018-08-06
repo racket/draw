@@ -56,9 +56,10 @@ A @defterm{font} is an object which determines the appearance of text,
  @item{@indexed-racket['italic]}
  ]}
 
-@item{weight --- The weight of the font, an exact integer between @racket[100] and @racket[1000],
-                 inclusive, or one of:
+@item{@deftech[#:key "font weight"]{weight} ---
+ The weight of the font, one of:
  @itemize[
+ @item{@racket[(integer-in 100 1000)]}
  @item{@indexed-racket['thin] (equivalent to @racket[100])}
  @item{@indexed-racket['ultralight] (equivalent to @racket[200])}
  @item{@indexed-racket['light] (equivalent to @racket[300])}
@@ -71,7 +72,13 @@ A @defterm{font} is an object which determines the appearance of text,
  @item{@indexed-racket['ultrabold] (equivalent to @racket[800])}
  @item{@indexed-racket['heavy] (equivalent to @racket[900])}
  @item{@indexed-racket['ultraheavy] (equivalent to @racket[1000])}
- ]}
+ ]
+
+ @history[#:changed "1.14" @elem{Changed to allow integer values and the symbols @racket['thin],
+                                 @racket['ultralight], @racket['semilight], @racket['book],
+                                 @racket['medium], @racket['semibold], @racket['ultrabold],
+                                 @racket['heavy], and @racket['ultraheavy].}]
+ }
 
 @item{underline? --- @racket[#t] for underlined, @racket[#f] for plain.}
 
