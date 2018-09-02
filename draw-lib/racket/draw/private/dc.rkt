@@ -1317,6 +1317,11 @@
                            [any? [combine? #f]]
                            [exact-nonnegative-integer? [offset 0]]
                            [real? [angle 0.0]])
+      (unless (offset . <= . (string-length s))
+        (raise-arguments-error (method-name 'dc<%> 'draw-text)
+                               "offset is too large for string"
+                               "offset" offset
+                               "string" s))
       (with-cr
        (check-ok 'draw-text)
        cr
