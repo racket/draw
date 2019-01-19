@@ -127,6 +127,9 @@
 
 (define the-color-database (new color-database%))
 
+;; ------------------------------------
+;; The Colors
+
 (define colors
   #hash(("aliceblue" . #(240 248 255))
         ("antiquewhite" . #(250 235 215))
