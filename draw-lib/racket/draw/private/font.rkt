@@ -348,10 +348,27 @@
       (if (not all-variants?)
           (list (pango_font_family_get_name fam))
           (for/list ([face (in-list (pango_font_family_list_faces fam))])
-            (string-append
-             (pango_font_family_get_name fam)
-             ", "
-             (pango_font_face_get_face_name face))))))
+            (define family-name (pango_font_family_get_name fam))
+            (define full-name (pango_font_description_to_string
+                               (pango_font_face_describe face)))
+            (define len (string-length family-name))
+            ;; Normally, the full description will extend the family name:
+            (cond
+             [(and ((string-length full-name) . > . (+ len 1))
+                   (string=? (substring full-name 0 len) family-name)
+                   (char=? #\space (string-ref full-name len)))
+              (string-append family-name "," (substring full-name len))]
+             [#f
+              ;; If the full description doesn't extend the name, then we
+              ;; could show more information by adding the font's declared
+              ;; face string. But that may not be parseable by Pango, so
+              ;; we don't return this currently. Maybe one day add an option
+              ;; to expose this string.
+              (string-append family-name ", " (pango_font_face_get_face_name face))]
+             [else
+              ;; In this case, we can't say more than just the family name,
+              ;; even though that may produce duplicates (but usually won't)
+              family-name])))))
    string<?))
 
 (define (make-font #:size [size 12.0]

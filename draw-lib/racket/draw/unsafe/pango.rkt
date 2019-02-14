@@ -298,6 +298,11 @@
 (define-pango pango_font_description_set_size (_pfun PangoFontDescription _int -> _void))
 (define-pango pango_font_description_set_absolute_size (_pfun PangoFontDescription _double* -> _void))
 (define-pango pango_font_description_get_family (_pfun PangoFontDescription ->  _string))
+(define-pango pango_font_description_to_string (_pfun PangoFontDescription ->  _string)
+  #:wrap (allocator g_free))
+
+(define-pango pango_font_face_describe (_pfun PangoFontFace -> PangoFontDescription)
+  #:wrap (allocator pango_font_description_free))
 
 (define _PangoWin32FontCache (_cpointer 'PangoWin32FontCache))
 (define _HFONT (_cpointer 'HFONT))
