@@ -205,7 +205,7 @@ is not one of the @racketidfont{/mask} symbols, then
 @racket[read-bitmap] checks whether a file exists matching @racket[in]
 but with @filepath{@"@"2x} added to the name (before the file suffix,
 if any). If the @filepath{@"@"2x} path exists, it is used instead of
-@racket[in], and @racket[backing-store] is multiplied by @racket[2].
+@racket[in], and @racket[backing-scale] is multiplied by @racket[2].
 
 @history[#:changed "1.1" @elem{Added the @racket[#:backing-scale]
 and @racket[#:try-@2x?] optional arguments.}]}
