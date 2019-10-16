@@ -3,7 +3,8 @@
          ffi/unsafe/define
          ffi/unsafe/alloc
          "../private/utils.rkt"
-         "../private/libs.rkt")
+         "../private/libs.rkt"
+         "callback.rkt")
 
 (define-runtime-lib png-lib
   [(unix)
@@ -53,8 +54,10 @@
   (_fun _bytes
         _pointer
         (_fun #:keep (lambda (v) ((current-fun-keep) v))
+              #:atomic? callback-atomic?
               _png_structp _string -> _void)
         (_fun #:keep (lambda (v) ((current-fun-keep) v))
+              #:atomic? callback-atomic?
               _png_structp _string -> _void)
         -> _png_structp))
 
@@ -77,8 +80,10 @@
   (_fun _bytes
         _pointer
         (_fun #:keep (lambda (v) ((current-fun-keep) v))
+              #:atomic? callback-atomic?
               _png_structp _string -> _void)
         (_fun #:keep (lambda (v) ((current-fun-keep) v))
+              #:atomic? callback-atomic?
               _png_structp _string -> _void)
         -> _png_structp))
 (define png_destroy_write_struct1
@@ -130,6 +135,7 @@
 (define-png png_set_read_fn (_fun _png_structp
                                   _pointer
                                   (_fun #:keep (lambda (v) ((current-fun-keep) v))
+                                        #:atomic? callback-atomic?
                                         _png_structp
                                         _pointer
                                         _png_size_t
@@ -138,11 +144,13 @@
 (define-png png_set_write_fn (_fun _png_structp
                                    _pointer
                                    (_fun #:keep (lambda (v) ((current-fun-keep) v))
+                                         #:atomic? callback-atomic?
                                          _png_structp
                                          _pointer
                                          _png_size_t
                                          -> _void)
                                    (_fun #:keep (lambda (v) ((current-fun-keep) v))
+                                         #:atomic? callback-atomic?
                                          _png_structp
                                          -> _void)
                                    -> _void))
@@ -233,7 +241,7 @@
          [png (parameterize ([current-fun-keep fun-keep])
                 (png_create_read_struct PNG_LIBPNG_VER_STRING #f error-esc void))]
          [info (png_create_info_struct png)]
-         [ib (make-cell (cons in funs))])
+         [ib (make-cell (cons (sanitize-input-port in) funs))])
     (parameterize ([current-fun-keep fun-keep])
       (png_set_read_fn png ib read-png-bytes))
     (png_read_info png info)
@@ -318,18 +326,19 @@
     rows))
 
 (define (read-png reader)
-  (let* ([row-bytes (png_get_rowbytes (reader-png reader) (reader-info reader))]
-         [rows (malloc-rows (reader-h reader) row-bytes)])
-    (for ([i (in-range (reader-num-passes reader))])
-      (png_read_rows (reader-png reader) rows #f (reader-h reader)))
-    (png_read_end (reader-png reader) (reader-info reader))
-    (list->vector
-     (for/list ([i (in-range (reader-h reader))])
-       (define p (ptr-ref rows _pointer i))
-       (define bstr (make-bytes row-bytes))
-       (memcpy bstr p row-bytes)
-       (void/reference-sink rows) ; keep alive until memcpy is done
-       bstr))))
+  (guard-foreign-escape
+   (let* ([row-bytes (png_get_rowbytes (reader-png reader) (reader-info reader))]
+          [rows (malloc-rows (reader-h reader) row-bytes)])
+     (for ([i (in-range (reader-num-passes reader))])
+       (png_read_rows (reader-png reader) rows #f (reader-h reader)))
+     (png_read_end (reader-png reader) (reader-info reader))
+     (list->vector
+      (for/list ([i (in-range (reader-h reader))])
+        (define p (ptr-ref rows _pointer i))
+        (define bstr (make-bytes row-bytes))
+        (memcpy bstr p row-bytes)
+        (void/reference-sink rows) ; keep alive until memcpy is done
+        bstr)))))
 
 (define (destroy-png-reader reader)
   (when (reader-png reader)
@@ -362,7 +371,7 @@
          [png (parameterize ([current-fun-keep fun-keep])
                 (png_create_write_struct PNG_LIBPNG_VER_STRING #f error-esc void))]
          [info (png_create_info_struct png)]
-         [ob (make-cell (cons out funs))])
+         [ob (make-cell (cons (sanitize-output-port out #:key info) funs))])
     (parameterize ([current-fun-keep fun-keep])
       (png_set_write_fn png ob write-png-bytes flush-png-bytes))
     (png_set_IHDR png info w h (if b&w? 1 8)
@@ -376,17 +385,19 @@
     (make-writer png info ob)))
 
 (define (write-png writer vector-of-rows)
-  (if (zero? (vector-length vector-of-rows))
-      (png_write_image (writer-png writer) #f)
-      (let* ([h (vector-length vector-of-rows)]
-             [w (bytes-length (vector-ref vector-of-rows 0))]
-             [rows (malloc-rows h w)])
-        (for/list ([i (in-range h)])
-          (memcpy (ptr-ref rows _pointer i)
-                  (vector-ref vector-of-rows i)
-                  w))
-        (png_write_image (writer-png writer) rows)))
-  (png_write_end (writer-png writer) (writer-info writer)))
+  (guard-foreign-escape
+   (if (zero? (vector-length vector-of-rows))
+       (png_write_image (writer-png writer) #f)
+       (let* ([h (vector-length vector-of-rows)]
+              [w (bytes-length (vector-ref vector-of-rows 0))]
+              [rows (malloc-rows h w)])
+         (for/list ([i (in-range h)])
+           (memcpy (ptr-ref rows _pointer i)
+                   (vector-ref vector-of-rows i)
+                   w))
+         (png_write_image (writer-png writer) rows)))
+   (png_write_end (writer-png writer) (writer-info writer)))
+  (flush-sanitized-output (writer-info writer)))
 
 (define (destroy-png-writer writer)
   (png_destroy_write_struct2 (writer-png writer)
