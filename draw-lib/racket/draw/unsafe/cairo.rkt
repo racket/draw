@@ -70,7 +70,7 @@
   #:make-fail make-not-available
   #:wrap (allocator cairo_surface_destroy))
 (define-cairo cairo_quartz_surface_get_cg_context
-  (_cfun _cairo_surface_t -> _CGContextRef)
+  (_cfun _cairo_surface_t -> (_or-null _CGContextRef))
   #:make-fail make-not-available)
 
 (define-cairo cairo_win32_surface_create
