@@ -1,8 +1,8 @@
 #lang racket/base
 (require ffi/unsafe
          ffi/unsafe/atomic
-         racket/port
-         racket/linklet)
+         ffi/unsafe/vm
+         racket/port)
 
 ;; The 'racket VM can handle concurrent callbacks in different Racket
 ;; threads, because it copies the C stack in and out to implement
@@ -66,10 +66,7 @@
 
 (define enable-interrupts
   (and callback-atomic?
-       (instantiate-linklet (compile-linklet
-                             '(linklet () () enable-interrupts))
-                            null
-                            (make-instance 'interrupts))))
+       (vm-primitive 'enable-interrupts)))
 
 ;; ----------------------------------------
 
