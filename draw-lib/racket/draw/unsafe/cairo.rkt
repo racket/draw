@@ -44,14 +44,15 @@
     [(_ptr/immobile o t) (type: _pointer
                                 pre:  (malloc t 'atomic-interior)
                                 post: (x => (ptr-ref x t)))]))
- 
-;; Cairo is supposed to be thread-safe, but concurrent use seems
-;; to cause trouble right now. (Try rendering the "plot" document
-;; in multiple places at once.) For now, treat Cairo as non-thread
-;; safe, and use the same lock with Pango (since it calls Cairo).
+
+;; If Cairo seems not to be thread-safe, set this is a string lock
+;; name, so the Pango binding can use the same lock:
+(define cairo-lock-name #f) ; could be "cairo-pango-lock"
+(provide cairo-lock-name)
+
 ;; Use `_cfun' for Cairo functions and `_cbfun' for callbacks:
 (define-syntax-rule (_cfun . rest)
-  (_fun #:lock-name "cairo-pango-lock" . rest))
+  (_fun . rest))
 (define-syntax-rule (_cbfun . rest)
   (_fun #:atomic? #t . rest))
 
