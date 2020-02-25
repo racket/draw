@@ -27,7 +27,7 @@ Creates a linear gradient with a line from (@racket[x0], @racket[y0])
 to end point (@racket[x1], @racket[y1]). The @racket[stops] list
 assigns colors to stop points along the line, where @racket[0.0]
 corresponds to (@racket[x0], @racket[y0]), @racket[1.0] corresponds to
-(@racket[x1], @racket[y2]), and numbers in between correspond to
+(@racket[x1], @racket[y1]), and numbers in between correspond to
 points in between.
 
 Elements in @racket[stops] are implicitly sorted by point (i.e., by
