@@ -1116,7 +1116,7 @@
       (with-cr 
        (check-ok who)
        cr
-       (let ([draw-one (lambda (align-x align-y brush? pen? sub1w sub1h)
+       (let ([draw-one (lambda (brush? pen? sub1w sub1h)
                          (let* ([orig-x x]
                                 [orig-y y]
                                 [x (align-x x)]
@@ -1146,10 +1146,9 @@
                              (cairo_restore cr)
                              (draw cr brush? pen?))))])
          (when (brush-draws?)
-           (draw-one (lambda (x) x) (lambda (y) y) #t #f (lambda (x) x) (lambda (x) x)))
+           (draw-one #t #f (lambda (x) x) (lambda (x) x)))
          (when (pen-draws?)
-           (draw-one (lambda (x) (align-x x)) (lambda (y) (align-y y)) #f #t 
-                     (lambda (x) (sub1w x)) (lambda (x) (sub1h x)))))))
+           (draw-one #f #t (lambda (x) (sub1w x)) (lambda (x) (sub1h x)))))))
 
     (def/public (draw-arc [real? x] [real? y] [nonnegative-real? width] [nonnegative-real? height]
                           [real? start-radians] [real? end-radians])
