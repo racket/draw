@@ -1158,28 +1158,30 @@
     (def/public (draw-ellipse [real? x] [real? y] [nonnegative-real? width] [nonnegative-real? height])
       (do-draw-arc 'draw-ellipse x y width height 0 2pi))
 
+    (define/private (do-draw-point who x y)
+      (with-cr
+        (check-ok who)
+        cr
+        (cairo_new_path cr)
+        (let ([x (align-x x)]
+              [y (align-y y)])
+          (cairo_move_to cr x y)
+          (cairo_line_to cr (+ x (/ 0.1 effective-scale-x)) (+ y (/ 0.1 effective-scale-y)))
+          (draw cr #f #t))))
+
     (def/public (draw-line [real? x1] [real? y1] [real? x2] [real? y2])
-      (let ([dot (if (and (= x1 x2) (= y1 y2))
-                     0.1
-                     0)])
-        (with-cr
-         (check-ok 'draw-line)
-         cr
-         (cairo_new_path cr)
-         (cairo_move_to cr (align-x x1) (align-y y1))
-         (cairo_line_to cr (+ (align-x x2) dot) (+ (align-y y2) dot))
-         (draw cr #f #t))))
+      (if (and (= x1 x2) (= y1 y2))
+          (do-draw-point 'draw-line x1 y1)
+          (with-cr
+            (check-ok 'draw-line)
+            cr
+            (cairo_new_path cr)
+            (cairo_move_to cr (align-x x1) (align-y y1))
+            (cairo_line_to cr (align-x x2) (align-y y2))
+            (draw cr #f #t))))
     
     (def/public (draw-point [real? x] [real? y])
-      (with-cr
-       (check-ok 'draw-point)
-       cr
-       (cairo_new_path cr)
-       (let ([x (align-x x)]
-             [y (align-y y)])
-         (cairo_move_to cr x y)
-         (cairo_line_to cr (+ 0.1 x) (+ 0.1 y))
-       (draw cr #f #t))))
+      (do-draw-point 'draw-point x y))
 
     (def/public (draw-lines [(make-alts (make-list point%) list-of-pair-of-real?) pts]
                             [real? [x 0.0]] [real? [y 0.0]])
