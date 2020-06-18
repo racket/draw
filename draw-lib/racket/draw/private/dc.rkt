@@ -899,7 +899,7 @@
                  [r (norm (color-red c))]
                  [g (norm (color-green c))]
                  [b (norm (color-blue c))]
-                 [a (color-alpha c)])
+                 [a (* (color-alpha c) (get-alpha))])
             (cairo_pattern_add_color_stop_rgba p offset r g b a)))
       (install-transformation transformation cr)
       (cairo_set_source cr p)
