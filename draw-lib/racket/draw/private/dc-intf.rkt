@@ -33,6 +33,7 @@
         'horizontal-hatch 'vertical-hatch))
 
 (define dc<%>
+  (let ([is-a-dc<%>/c (recursive-contract (is-a?/c dc<%>) #:flat)])
   (interface ()
     [cache-font-metrics-key (->m exact-integer?)]
     [clear (->m void?)]
@@ -65,6 +66,7 @@
                        (and/c real? (not/c negative?))
                        (and/c real? (not/c negative?))
                        void?)]
+    [draw-layer (->*m [is-a-dc<%>/c] [real? real?] void?)]
     [draw-line (->m real? real?
                     real? real?
                     void?)]
@@ -135,6 +137,7 @@
                                                  real? real? real?)
                                        real? real? real? real? real?))]
     [glyph-exists? (->m char? boolean?)]
+    [make-layer (->m is-a-dc<%>/c)]
     [ok? (->m boolean?)]
     [resume-flush (->m void?)]
     [rotate (->m real? void?)]
@@ -177,4 +180,4 @@
     [transform (->m (vector/c real? real? real? real? real? real?)
                     void?)]
     [translate (->m real? real? void?)]
-    [try-color (->m (is-a?/c color%) (is-a?/c color%) void?)]))
+    [try-color (->m (is-a?/c color%) (is-a?/c color%) void?)])))

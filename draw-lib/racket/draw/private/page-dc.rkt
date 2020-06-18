@@ -103,6 +103,7 @@
      (draw-rectangle x y w h)
      (draw-point x y)
      (draw-line x1 y1 x2 y2)
+     (draw-layer layer [x [y]])
      (clear)
      (erase))
 
