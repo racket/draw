@@ -68,7 +68,7 @@ When @racket[in] is provided: Creates a bitmap from a file format,
  by @method[bitmap% get-width] and @method[bitmap% get-height]) is the
  @racket[ceiling] of the bitmap's size from @racket[in] divided by
  @racket[backing-scale]; the backing scale must be @racket[1.0] if the
- bitmap is monocrhome or loaded with a mask.
+ bitmap is monochrome or loaded with a mask.
 
 When a @racket[bits] byte string is provided: Creates a monochrome
  bitmap from an array of bit values, where each byte in @racket[bits]
