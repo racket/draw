@@ -388,7 +388,7 @@
              get-pen get-brush get-font
              get-smoothing get-text-mode 
              get-background get-text-background get-text-foreground
-             get-alpha get-clipping-region
+             get-alpha get-clipping-region get-size
              translate rotate scale)
 
     (define record-limit +inf.0)
@@ -457,7 +457,7 @@
 
     (define-syntax (generate-record-unconvert stx)
       (syntax-case stx ()
-        [(_ ([clause-tags clause-rhs] ...) (defn (name arg ...)) ...)
+        [(_ record-unconvert ([clause-tags clause-rhs] ...) (defn (name arg ...)) ...)
          (with-syntax ([((arg-id ...) ...)
                         (let ([names (syntax->list #'(name ...))]
                               [argss (syntax->list #'((arg ...) ...))])
@@ -646,7 +646,22 @@
                   (install-transform dc (apply-transform state t)))
                 (lambda () `(transform ,t)))))
 
+    (define/augride (make-layer)
+      (define-values (w h) (get-size))
+      (new record-layer-dc% [owner this] [width w] [height h]))
+
+    (define/override (draw-owned-layer layer x y)
+      (define proc (send layer get-recorded-command #f))
+      (define datum (send layer get-recorded-command #t))
+      (record (lambda (dc state)
+                (define layer (send dc make-layer))
+                (proc layer)
+                (send dc draw-layer layer x y)
+                state)
+              (lambda () `(draw-layer ,datum ,x ,y))))
+
     (generate-record-unconvert
+     record-unconvert
      ([(set-clipping-region) (lambda (r) 
                                (define make-r (unconvert-region r))
                                (lambda (dc state)
@@ -682,7 +697,14 @@
                                 (install-transform dc (struct-copy dc-state state [initial-matrix mi]))))]
       [(transform) (lambda (t)
                      (lambda (dc state)
-                       (install-transform dc (apply-transform state t))))])
+                       (install-transform dc (apply-transform state t))))]
+      [(draw-layer) (lambda (datum x y)
+                      (define layer-drawer (generate-drawer (record-unconvert datum)))
+                      (lambda (dc state)
+                        (define layer (send dc make-layer))
+                        (layer-drawer layer)
+                        (send dc draw-layer layer x y)
+                        state))])
      ;; remaining clauses are generated:
 
      (define/record (set-smoothing s))
@@ -779,6 +801,8 @@
     
     (super-new)
     (reset-recording)))
+
+(define record-layer-dc% (record-dc-mixin (dc-mixin (layer-mixin record-dc-backend%))))
 
 (define (recorded-datum->procedure d)
   (generate-drawer/restore (send (new record-dc%) record-unconvert d)))
