@@ -50,4 +50,4 @@
      (void (g_log_set_default_handler f #f)))]
   [(chez-scheme)
    (define f (vm-primitive 'glib-log-message))
-   (void (g_log_set_default_handler (cast f _intptr _pointer) #f))])
+   (void (g_log_set_default_handler (cast f _uintptr _pointer) #f))])
