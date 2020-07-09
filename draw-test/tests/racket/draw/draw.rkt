@@ -219,9 +219,11 @@
        [do-clock #f]
        [use-bitmap? #f]
        [platform-bitmap? #f]
+       [platform-scaled-bitmap? #f]
        [screen-bitmap? #f]
        [compat-bitmap? #f]
-       [scaled-bitmap? #f]
+       [scaledX-bitmap? #f]
+       [scaled3-bitmap? #f]
        [use-record? #f]
        [serialize-record? #f]
        [use-bad? #f]
@@ -305,16 +307,21 @@
                                    (let ([w (ceiling (* xscale DRAW-WIDTH))]
                                          [h (ceiling (* yscale DRAW-HEIGHT))])
                                      (cond
-                                      [platform-bitmap?
-                                       (make-platform-bitmap w h)]
-                                      [screen-bitmap?
-                                       (make-screen-bitmap w h)]
-                                      [compat-bitmap?
-                                       (send this make-bitmap w h)]
-                                      [scaled-bitmap?
-                                       (make-bitmap w h #:backing-scale 3.0)]
-                                      [else
-                                       (make-object bitmap% w h depth-one? c-gray?)])))
+                                       [(or platform-bitmap?
+                                            platform-scaled-bitmap?)
+                                        (make-platform-bitmap w h #:backing-scale (if platform-scaled-bitmap?
+                                                                                      (get-display-backing-scale)
+                                                                                      1.0))]
+                                       [screen-bitmap?
+                                        (make-screen-bitmap w h)]
+                                       [compat-bitmap?
+                                        (send this make-bitmap w h)]
+                                       [scaledX-bitmap?
+                                        (make-bitmap w h #:backing-scale (get-display-backing-scale))]
+                                       [scaled3-bitmap?
+                                        (make-bitmap w h #:backing-scale 3.0)]
+                                       [else
+                                        (make-object bitmap% w h depth-one? c-gray?)])))
 			       #f)]
 		       [draw-series
 			(lambda (dc pens pent penx size x y flevel last?)
@@ -1325,17 +1332,20 @@
 	    (super-new [parent parent][style '(hscroll vscroll)])
 	    (init-auto-scrollbars (* 2 DRAW-WIDTH) (* 2 DRAW-HEIGHT) 0 0))
 	  vp)])
-    (make-object choice% #f '("Canvas" "Pixmap" "Bitmap" "Platform" "Screen" "Compatible" "Backing x3" "Record" "Serialize" "Bad") hp0
+    (make-object choice% #f '("Canvas" "Pixmap" "Bitmap" "Platform" "Platform xScreen" "Screen" "Compatible"
+                                       "Backing xScreen" "Backing x3" "Record" "Serialize" "Bad") hp0
 		 (lambda (self event)
 		   (set! use-bitmap? (< 0 (send self get-selection)))
 		   (set! depth-one? (= 2 (send self get-selection)))
 		   (set! platform-bitmap? (= 3 (send self get-selection)))
-		   (set! screen-bitmap? (= 4 (send self get-selection)))
-		   (set! compat-bitmap? (= 5 (send self get-selection)))
-		   (set! scaled-bitmap? (= 6 (send self get-selection)))
-		   (set! use-record? (<= 7 (send self get-selection) 8))
-		   (set! serialize-record? (= 8 (send self get-selection)))
-		   (set! use-bad? (< 9 (send self get-selection)))
+		   (set! platform-scaled-bitmap? (= 4 (send self get-selection)))
+		   (set! screen-bitmap? (= 5 (send self get-selection)))
+		   (set! compat-bitmap? (= 6 (send self get-selection)))
+		   (set! scaledX-bitmap? (= 7 (send self get-selection)))
+		   (set! scaled3-bitmap? (= 8 (send self get-selection)))
+		   (set! use-record? (<= 9 (send self get-selection) 8))
+		   (set! serialize-record? (= 10 (send self get-selection)))
+		   (set! use-bad? (< 11 (send self get-selection)))
 		   (send canvas refresh)))
     (make-object choice% #f
 		 '("MrEd XOR" "PLT Middle" "PLT ^ MrEd" "MrEd ^ PLT" "MrEd ^ MrEd" 

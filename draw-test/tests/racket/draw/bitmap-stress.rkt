@@ -7,8 +7,9 @@
 ;; and writing in many threads at the same time.
 
 (define (check src save-type [read-type 'unknown/alpha])
+  (printf "~s ~s\n" save-type read-type)
   (define ts
-    (for/list ([i (in-range 40)])
+    (for/list ([i (in-range 1 #;40)])
       (thread
        (lambda()
          (for ([i (in-range 10)])
@@ -36,7 +37,7 @@
               (unless (equal? s1 s2)
                 (error 'bitmap-stress "mismatch for ~s ~s" src save-type))])
            (delete-file t))))))
-  
+
   (for ([t (in-list ts)]) (sync t)))
 
 (check "PLT-206.png" 'png)
@@ -45,3 +46,25 @@
 (check "help16x16.xpm" 'png 'unknown)
 (check "help16x16.xbm" 'png 'unknown)
 (check "help.bmp" 'png 'unknown)
+
+;; Also check that we don't run out of C stack space due to error escapes
+(define (ones)
+  (if (eq? 'racket (system-type 'vm))
+      ;; For the 'racket VM, we can further check that the port is read on demand
+      (make-input-port
+       'ones
+       (lambda (bstr)
+         (bytes-set! bstr 0 1)
+         1)
+       (lambda (bstr . args)
+         (bytes-set! bstr 0 1)
+         1)
+       void)
+      ;; Assume other VMs read the poirt eagerly
+      (open-input-bytes (bytes 1 1 1 1 1 1 1 1))))
+
+(for ([i (in-range 25000)])
+  (when (zero? (modulo i 1000))
+    (printf "~s\n" i))
+  (with-handlers ([exn:fail? void])
+    (read-bitmap (ones) 'jpeg)))

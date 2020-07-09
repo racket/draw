@@ -596,9 +596,9 @@ following order:
 
  @item{@racket[_xx]: a scale from the logical @racket[_x] to the device @racket[_x]}
 
- @item{@racket[_xy]: a scale from the logical @racket[_x] added to the device @racket[_y]}
-
  @item{@racket[_yx]: a scale from the logical @racket[_y] added to the device @racket[_x]}
+
+ @item{@racket[_xy]: a scale from the logical @racket[_x] added to the device @racket[_y]}
 
  @item{@racket[_yy]: a scale from the logical @racket[_y] to the device @racket[_y]}
 

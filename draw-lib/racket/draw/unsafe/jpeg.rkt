@@ -3,7 +3,8 @@
          ffi/unsafe/define
          ffi/unsafe/alloc
          "../private/utils.rkt"
-         "../private/libs.rkt")
+         "../private/libs.rkt"
+         "callback.rkt")
 
 (define-runtime-lib jpeg-lib
   [(unix) (ffi-lib "libjpeg" '("62" "8" "9" ""))]
@@ -80,9 +81,11 @@
     (let ([m (cast (malloc dummy-size 'raw) _pointer _jpeg_any_struct-pointer)]
           [e (cast (malloc sizeof_jpeg_error_mgr 'raw) _pointer _jpeg_error_mgr-pointer)])
       (set-jpeg_any_struct-err! m (jpeg_std_error e))
-      (set-jpeg_error_mgr-error_exit! e (cast error-exit (_fun _j_common_ptr -> _void) _fpointer))
+      (set-jpeg_error_mgr-error_exit! e (cast error-exit (_fun #:atomic? callback-atomic?
+                                                               _j_common_ptr -> _void) _fpointer))
       (let ([s (with-handlers ([exn:fail? (lambda (exn) (exn-message exn))])
-                 (jpeg_CreateDecompress/test m 0 dummy-size)
+                 (guard-foreign-escape
+                  (jpeg_CreateDecompress/test m 0 dummy-size))
                  "")])
         (free m)
         (free e)
@@ -625,14 +628,15 @@
 (define create-decompress
   ((allocator destroy-decompress)
    (lambda (in)
-     (let ([m (ptr-cast (malloc _jpeg_decompress_struct 'raw) _jpeg_decompress_struct-pointer)]
+     (let ([in (sanitize-input-port in)]
+           [m (ptr-cast (malloc _jpeg_decompress_struct 'raw) _jpeg_decompress_struct-pointer)]
            [s (ptr-cast (malloc _jpeg_source_mgr 'raw) _jpeg_source_mgr-pointer)]
            [e (ptr-cast (malloc sizeof_jpeg_error_mgr 'raw) _jpeg_error_mgr-pointer)]
            [b (malloc 'raw BUFFER-SIZE)]
            [funs (box null)])
        (set-jpeg_decompress_struct-err! m (jpeg_std_error e))
        (set-jpeg_error_mgr-error_exit! e (cast error-exit
-                                               (_fun #:keep funs _j_common_ptr -> _void)
+                                               (_fun #:keep funs #:atomic? callback-atomic? _j_common_ptr -> _void)
                                                _fpointer))
        (jpeg_CreateDecompress m JPEG_LIB_VERSION (ctype-sizeof _jpeg_decompress_struct))
        (set-jpeg_decompress_struct-src*! m s)
@@ -641,17 +645,17 @@
        (set-jpeg_source_mgr-next_input_byte! s #f)
        (set-jpeg_source_mgr-bytes_in_buffer! s 0)
        (set-jpeg_source_mgr-init_source! s (cast init-source
-                                                 (_fun #:keep funs _j_decompress_ptr -> _void)
+                                                 (_fun #:keep funs #:atomic? callback-atomic? _j_decompress_ptr -> _void)
                                                  _fpointer))
        (set-jpeg_source_mgr-fill_input_buffer! s (cast fill-input-buffer
-                                                       (_fun #:keep funs _j_decompress_ptr -> _jbool)
+                                                       (_fun #:keep funs #:atomic? callback-atomic? _j_decompress_ptr -> _jbool)
                                                        _fpointer))
        (set-jpeg_source_mgr-skip_input_data! s (cast skip-input-data
-                                                     (_fun #:keep funs _j_decompress_ptr _long -> _void)
+                                                     (_fun #:keep funs #:atomic? callback-atomic? _j_decompress_ptr _long -> _void)
                                                      _fpointer))
        (set-jpeg_source_mgr-resync_to_restart! s jpeg_resync_to_restart)
        (set-jpeg_source_mgr-term_source! s (cast term-source
-                                                 (_fun #:keep funs _j_decompress_ptr -> _void)
+                                                 (_fun #:keep funs #:atomic? callback-atomic? _j_decompress_ptr -> _void)
                                                  _fpointer))
        m))))
 
@@ -666,12 +670,13 @@
 
 (define create-compress
   ((allocator destroy-compress)
-   (lambda (out)
-     (let ([m (ptr-cast (malloc _jpeg_compress_struct 'raw) _jpeg_compress_struct-pointer)]
-           [d (ptr-cast (malloc _jpeg_destination_mgr 'raw) _jpeg_destination_mgr-pointer)]
-           [e (ptr-cast (malloc sizeof_jpeg_error_mgr 'raw) _jpeg_error_mgr-pointer)]
-           [b (malloc 'raw BUFFER-SIZE)]
-           [funs (box null)])
+   (lambda (orig-out)
+     (let* ([m (ptr-cast (malloc _jpeg_compress_struct 'raw) _jpeg_compress_struct-pointer)]
+            [out (sanitize-output-port orig-out #:key m)]
+            [d (ptr-cast (malloc _jpeg_destination_mgr 'raw) _jpeg_destination_mgr-pointer)]
+            [e (ptr-cast (malloc sizeof_jpeg_error_mgr 'raw) _jpeg_error_mgr-pointer)]
+            [b (malloc 'raw BUFFER-SIZE)]
+            [funs (box null)])
        (set-jpeg_compress_struct-err! m (jpeg_std_error e))
        (set-jpeg_error_mgr-error_exit! e (cast error-exit
                                                (_fun #:keep funs _j_common_ptr -> _void)
@@ -715,7 +720,12 @@
 (define-jpeg jpeg_set_quality (_fun _j_compress_ptr _int _jbool -> _int))
 (define-jpeg jpeg_start_compress (_fun _j_compress_ptr _jbool -> _void))
 (define-jpeg jpeg_write_scanlines (_fun _j_compress_ptr _pointer _int -> _void))
-(define-jpeg jpeg_finish_compress (_fun _j_compress_ptr -> _int))
+(define-jpeg/private jpeg_finish_compress* (_fun _j_compress_ptr -> _int)
+  #:c-id jpeg_finish_compress)
+
+(define (jpeg_finish_compress m)
+  (jpeg_finish_compress* m)
+  (flush-sanitized-output m))
 
 (provide create-decompress
          destroy-decompress
@@ -734,5 +744,7 @@
          set-jpeg_compress_struct-image_height!
          set-jpeg_compress_struct-input_components!
          set-jpeg_compress_struct-in_color_space!
+
+         jpeg_finish_compress
          
          JPOOL_IMAGE)

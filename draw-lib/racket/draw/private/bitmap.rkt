@@ -9,6 +9,7 @@
          "../unsafe/cairo.rkt"
          "../unsafe/png.rkt"
          "../unsafe/jpeg.rkt"
+         (only-in "../unsafe/callback.rkt" guard-foreign-escape)
          "../xbm.rkt"
          "../xpm.rkt"
          "../bmp.rkt"
@@ -455,7 +456,8 @@
                   (values s b&w?))))]
            [(jpeg jpeg/alpha)
             (let ([d (create-decompress in)])
-              (dynamic-wind
+              (guard-foreign-escape
+               (dynamic-wind
                   void
                   (lambda ()
                     (jpeg_read_header d #t)
@@ -490,7 +492,7 @@
                           (jpeg_finish_decompress d)
                           (values s #f)))))
                   (lambda ()
-                    (destroy-decompress d))))]
+                    (destroy-decompress d)))))]
            [(gif gif/mask gif/alpha)
             (let-values ([(w h rows) (gif->rgba-rows in)])
               (let* ([s (cairo_image_surface_create CAIRO_FORMAT_ARGB32 w h)]
@@ -697,7 +699,8 @@
              (let ([c (create-compress out)]
                    [width (*i width backing-scale)]
                    [height (*i height backing-scale)])
-               (dynamic-wind
+               (guard-foreign-escape
+                 (dynamic-wind
                    void
                    (lambda ()
                      (set-jpeg_compress_struct-image_width! c width)
@@ -724,7 +727,7 @@
                                  (ptr-set! bstr _ubyte (+ ci 2) (ptr-ref dest _ubyte (+ row (+ 4i B)))))))
                            (jpeg_write_scanlines c samps 1))))
                      (jpeg_finish_compress c))
-                   (lambda () (destroy-compress c))))]
+                   (lambda () (destroy-compress c)))))]
             [(bmp)
              (define bstr (make-bytes (* width height 4)))
              (get-argb-pixels 0 0 width height bstr #:unscaled? #t)

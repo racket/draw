@@ -352,14 +352,18 @@
     (define/public (text-outline font str x y [combine? #f])
       (when (open?) (close))
       (let ([p (text-to-path font str x y combine?)])
-        (for ([a (in-list p)])
-          (case (car a)
-            [(move) (move-to (cadr a) (caddr a))]
-            [(line) (line-to (cadr a) (caddr a))]
-            [(curve) (curve-to (cadr a) (caddr a)
-                               (list-ref a 3) (list-ref a 4)
-                               (list-ref a 5) (list-ref a 6))]
-            [(close) (close)])))
+        (let loop ([p p])
+          (unless (null? p)
+            (let ([a (car p)])
+              (case (car a)
+                [(move) (unless (null? (cdr p)) ; why a trailing move?
+                          (move-to (cadr a) (caddr a)))]
+                [(line) (line-to (cadr a) (caddr a))]
+                [(curve) (curve-to (cadr a) (caddr a)
+                                   (list-ref a 3) (list-ref a 4)
+                                   (list-ref a 5) (list-ref a 6))]
+                [(close) (close)]))
+            (loop (cdr p)))))
       (close))
 
     (define/public (scale x y)

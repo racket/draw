@@ -1,6 +1,7 @@
 #lang racket/base
 (require ffi/unsafe
          ffi/unsafe/define
+         ffi/unsafe/vm
          "../private/libs.rkt")
 
 (provide (protect-out
@@ -42,6 +43,11 @@
 
 ;; Route glib logging to Racket logging:
 (define-glib g_log_set_default_handler (_fun _fpointer _pointer -> _fpointer))
-(let ([f (get-ffi-obj 'scheme_glib_log_message #f _fpointer (lambda () #f))])
-  (when f
-    (void (g_log_set_default_handler f #f))))
+(case (system-type 'vm)
+  [(racket)
+   (define f (get-ffi-obj 'scheme_glib_log_message #f _fpointer (lambda () #f)))
+   (when f
+     (void (g_log_set_default_handler f #f)))]
+  [(chez-scheme)
+   (define f (vm-primitive 'glib-log-message))
+   (void (g_log_set_default_handler (cast f _uintptr _pointer) #f))])

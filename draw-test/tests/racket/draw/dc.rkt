@@ -560,7 +560,10 @@
 ;; ----------------------------------------
 
 (test #f 'no-commas (ormap (lambda (s) (regexp-match? #rx"," s)) (get-face-list)))
-(test #t 'all-commas (andmap (lambda (s) (regexp-match? #rx"," s)) (get-face-list #:all-variants? #t)))
+(test #t 'all-commas (let ([plain (get-face-list)])
+                       (andmap (lambda (s) (or (and (member s plain) #t)
+                                               (regexp-match? #rx"," s)))
+                               (get-face-list #:all-variants? #t))))
 
 ;; ----------------------------------------
 

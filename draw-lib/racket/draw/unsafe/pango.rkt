@@ -127,13 +127,9 @@
 
 ;; As of Pango 1.28, Pango is not thread-safe at the C level, which
 ;; means that it isn't place-safe in Racket. Use the same lock as
-;; for Cairo, since Pango calls Cairo.
-;; [At some point, it seemes that when parts of Pango are initialized
-;; in a non-main place under Windows, then font operations start to
-;; fail when that place exits. If that still seems to be a problem,
-;; then we'll need to add `#:in-original-place? #t` for Windows.]
+;; for Cairo, if any, since Pango calls Cairo.
 (define-syntax-rule (_pfun spec ...)
-  (_fun #:lock-name "cairo-pango-lock" spec ...))
+  (_fun #:lock-name (or cairo-lock-name "pango-lock") spec ...))
 
 (provide g_object_unref g_free)
 (define-gobj g_object_unref (_pfun _pointer -> _void)
@@ -298,6 +294,16 @@
 (define-pango pango_font_description_set_size (_pfun PangoFontDescription _int -> _void))
 (define-pango pango_font_description_set_absolute_size (_pfun PangoFontDescription _double* -> _void))
 (define-pango pango_font_description_get_family (_pfun PangoFontDescription ->  _string))
+
+(define-pango pango_font_description_to_string/ptr (_pfun PangoFontDescription ->  _pointer)
+  #:c-id pango_font_description_to_string
+  #:wrap (allocator g_free))
+(define (pango_font_description_to_string desc)
+  (cast (pango_font_description_to_string/ptr desc) _pointer _string))
+(provide pango_font_description_to_string)
+
+(define-pango pango_font_face_describe (_pfun PangoFontFace -> PangoFontDescription)
+  #:wrap (allocator pango_font_description_free))
 
 (define _PangoWin32FontCache (_cpointer 'PangoWin32FontCache))
 (define _HFONT (_cpointer 'HFONT))
