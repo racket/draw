@@ -12,7 +12,8 @@
          color-alpha
          color-database<%>
          the-color-database
-         color->immutable-color)
+         color->immutable-color
+         normalize-color-name) ;; for use in the docs to make sure no names are missed
 
 (define-local-member-name
   r g b a

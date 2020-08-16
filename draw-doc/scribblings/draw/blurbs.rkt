@@ -4,6 +4,10 @@
            scribble/manual
            scribble/scheme
            scribble/decode
+           racket/set
+           racket/class
+           racket/draw
+           (only-in racket/draw/private/color normalize-color-name)
            (for-label racket/draw
                       racket/base)
            (for-syntax racket/base))
@@ -31,12 +35,25 @@
 
   (define MismatchExn @elem{an @racket[exn:fail:contract] exception is raised})
 
-  (define (colorName name name2 r g b)
-    (make-element #f
-                  (list (make-element `(bg-color ,r ,g ,b)
-                                      (list (hspace 5)))
-                        (hspace 1)
-                        (bytes->string/latin-1 name))))
+  
+  (define (colors . colors)
+    (define all-colors
+      (apply set (map normalize-color-name (send the-color-database get-names))))
+    (define result
+      (tabular
+       (for/list ([color-name (in-list colors)])
+         (define color (send the-color-database find-color color-name))
+         (set! all-colors (set-remove all-colors (normalize-color-name color-name)))
+         (list (make-element `(bg-color ,(send color red)
+                                        ,(send color green)
+                                        ,(send color blue))
+                             (list (hspace 5)))
+               (hspace 1)
+               (make-element 'tt color-name)))))
+    (unless (set-empty? all-colors)
+      (error 'colors "did not cover ~s" (sort (set->list all-colors) string<?)))
+    result)
+
 
   (define (slant . s)
     (make-element "slant" (decode-content s)))
