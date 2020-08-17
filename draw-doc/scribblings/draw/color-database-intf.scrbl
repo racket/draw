@@ -12,7 +12,8 @@
 The global @indexed-racket[the-color-database] object is an instance of
  @racket[color-database<%>]. It maintains a database of standard RGB
  colors for a predefined set of named colors (such as ``black'' and
- ``light gray'').
+ ``light gray''). See @method[color-database<%> find-color] for
+ information on how color names are normalized.
 
 The following colors are in the database:
  @(colors
@@ -203,7 +204,8 @@ See also @racket[color%].
                                "cornflower blue "
                                " CORNFLOWER BLUE"
                                "cornflower  blue")]
-}
+
+@history[#:changed "1.16" @elem{Changed normalization to more generally remove spaces.}]}
 
 
 @defmethod[(get-names) (listof string?)]{
