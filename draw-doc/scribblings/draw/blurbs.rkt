@@ -35,7 +35,16 @@
 
   (define MismatchExn @elem{an @racket[exn:fail:contract] exception is raised})
 
-  
+  ;; currently also used by the `2htdp/image` docs:
+  (define (colorName color-name ignored r g b)
+    (make-element #f
+                  (list (make-element `(bg-color ,r ,g ,b)
+                                      (list (hspace 5)))
+                        (hspace 1)
+                        (make-element 'tt (if (bytes? color-name)
+                                              (bytes->string/latin-1 color-name)
+                                              color-name)))))
+
   (define (colors . colors)
     (define all-colors
       (apply set (map normalize-color-name (send the-color-database get-names))))
@@ -44,12 +53,7 @@
        (for/list ([color-name (in-list colors)])
          (define color (send the-color-database find-color color-name))
          (set! all-colors (set-remove all-colors (normalize-color-name color-name)))
-         (list (make-element `(bg-color ,(send color red)
-                                        ,(send color green)
-                                        ,(send color blue))
-                             (list (hspace 5)))
-               (hspace 1)
-               (make-element 'tt color-name)))))
+         (list (colorName color-name #f (send color red) (send color green) (send color blue))))))
     (unless (set-empty? all-colors)
       (error 'colors "did not cover ~s" (sort (set->list all-colors) string<?)))
     result)
