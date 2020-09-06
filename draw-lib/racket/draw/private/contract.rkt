@@ -412,6 +412,16 @@
     (get-height (->m exact-nonnegative-integer?))
     (get-loaded-mask (->m (or/c (is-a?/c bitmap%) #f)))
     (get-width (->m exact-nonnegative-integer?))
+    (get-data-from-file (->m (or/c (vector/c (or/c 'unknown 'unknown/mask 'unknown/alpha
+                                                   'gif 'gif/mask 'gif/alpha
+                                                   'jpeg 'jpeg/alpha
+                                                   'png 'png/mask 'png/alpha
+                                                   'xbm 'xbm/alpha 'xpm 'xpm/alpha
+                                                   'bmp 'bmp/alpha)
+                                             (or/c (is-a?/c color%) #f) ;; actually always immutable
+                                             (and/c bytes? immutable?)
+                                             #:immutable #t)
+                                   #f)))
     (has-alpha-channel? (->m boolean?))
     (is-color? (->m boolean?))
     (load-file (->*m ((or/c path-string? input-port?))
@@ -422,7 +432,8 @@
                             'xbm 'xbm/alpha 'xpm 'xpm/alpha
                             'bmp 'bmp/alpha)
                       (or/c (is-a?/c color%) #f)
-                      any/c)
+                      any/c
+                      #:save-data-from-file? any/c)
                      boolean?))
     (ok? (->m boolean?))
     (save-file (->*m ((or/c path-string? output-port?)

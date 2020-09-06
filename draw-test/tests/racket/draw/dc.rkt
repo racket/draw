@@ -3,6 +3,7 @@
          racket/draw
          racket/gui/base
          racket/match
+         racket/port
          (for-syntax racket/base))
 
 ;; GRacket automatic testing basic functions and macros
@@ -679,7 +680,17 @@
 ;; ----------------------------------------
 
 (let ([bm (make-object bitmap% 1 1)])
-  (test #t 'load-file (send bm load-file (collection-file-path "sk.jpg" "icons"))))
+  (define pth (collection-file-path "sk.jpg" "icons"))
+  (test #t 'load-file (send bm load-file pth))
+  (test #f 'get-data-from-file.1 (send bm get-data-from-file))
+  (define data-in-file (open-output-bytes))
+  (call-with-input-file pth
+    (λ (port) (copy-port port data-in-file)))
+  (test #t 'load-file (send bm load-file pth #:save-data-from-file? #t))
+  (test (vector 'unknown #f (get-output-bytes data-in-file))
+        'get-data-from-file.2 (send bm get-data-from-file))
+  (test #t
+        'get-data-from-file.3 (immutable? (vector-ref (send bm get-data-from-file) 2))))
 
 ;; ----------------------------------------
 ;; Check save & load of monochrome PNG:
