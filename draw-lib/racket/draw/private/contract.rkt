@@ -408,6 +408,7 @@
                         (and/c bytes? (not/c immutable?)))
                        (any/c any/c #:unscaled? any/c)
                        void?))
+    (get-backing-scale (-> (>/c 0.0)))
     (get-depth (->m exact-nonnegative-integer?))
     (get-height (->m exact-nonnegative-integer?))
     (get-loaded-mask (->m (or/c (is-a?/c bitmap%) #f)))
