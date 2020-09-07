@@ -414,7 +414,7 @@
          (with-handlers ([exn:fail? (lambda (exn)
                                       (if complain-on-failure?
                                           (raise exn)
-                                          (values #f #f)))])
+                                          (values #f #f #f)))])
            (call-with-input-file*
                in
              (lambda (in) (do-load-bitmap/port in kind bg save-data-from-file?))))]
