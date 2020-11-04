@@ -1496,6 +1496,7 @@
           ;;    where the text needs to draw the same if it's drawn all together or
           ;;    in pieces).
           ;;  - If not `combine?', then we draw character by character.
+          (void)
           (if combine?
               ;; This is combine mode. It has to be a little complicated, after all,
               ;; because we may need to implement font substitution ourselves, which
@@ -1547,16 +1548,16 @@
                        [else
                         (let ([logical (make-PangoRectangle 0 0 0 0)])
                           (pango_layout_get_extents layout #f logical)
-                          (let ([nh (/ (->fl (PangoRectangle-height logical)) (->fl PANGO_SCALE))]
-                                [nd (/ (->fl (- (PangoRectangle-height logical)
-                                                (pango_layout_get_baseline layout)))
-                                       (->fl PANGO_SCALE))])
+                          (let ([nh (fl/ (->fl (PangoRectangle-height logical)) (->fl PANGO_SCALE))]
+                                [nd (fl/ (->fl (- (PangoRectangle-height logical)
+                                                  (pango_layout_get_baseline layout)))
+                                         (->fl PANGO_SCALE))])
                             (when draw-mode
                               (let ([bl (if measured? (- h d) (- nh nd))])
                                 (pango_layout_get_extents layout #f logical)
                                 (cairo_move_to cr 
-                                               (text-align-x/delta (+ x w) 0) 
-                                               (text-align-y/delta (+ y bl) 0))
+                                               (text-align-x/delta (fl+ x w) 0)
+                                               (text-align-y/delta (fl+ y bl) 0))
                                 ;; Draw the text:
                                 (let ([line (pango_layout_get_line_readonly layout 0)])
                                   (if (eq? draw-mode 'draw)
@@ -1574,7 +1575,7 @@
                                                   (->fl PANGO_SCALE))))]
                                     [na 0.0])
                                 (loop next-s draw-mode measured? unrotate?
-                                      (+ w nw) (max h nh) (max d nd) (max a na)))])))])))]))
+                                      (fl+ w nw) (flmax h nh) (flmax d nd) (flmax a na)))])))])))]))
               ;; This is character-by-character mode. It uses a cached per-character+font layout
               ;;  object.
               (let ([cache (if (or combine?
@@ -1677,9 +1678,9 @@
                                  ;; Move into position (based on the recorded Pango-units baseline)
                                  ;; and draw the glyphs
                                  (cairo_move_to cr 
-                                                (text-align-x/delta x 0) 
-                                                (text-align-y/delta (+ y (fl/ (->fl (vector-ref first-v 4))
-                                                                              (->fl PANGO_SCALE)))
+                                                (text-align-x/delta x 0)
+                                                (text-align-y/delta (fl+ y (fl/ (->fl (vector-ref first-v 4))
+                                                                                (->fl PANGO_SCALE)))
                                                                     0))
                                  (pango_cairo_show_glyph_string cr first-font glyph-string)
                                  (free glyph-infos)
@@ -1719,10 +1720,10 @@
                                    (max (let ([v (and cache (hash-ref cache (char->integer ch) #f))])
                                           (if v
                                               ;; Used cached size:
-                                              (- (vector-ref v 6) (vector-ref v 2))
+                                              (fl- (vector-ref v 6) (vector-ref v 2))
                                               ;; Query and record size:
                                               (let-values ([(lw lh ld la flh) (query-and-cache ch layout)])
-                                                (- flh ld))))
+                                                (fl- flh ld))))
                                         h)))
                                0.0)])
                      (for/fold ([w 0.0] [h 0.0] [d 0.0] [a 0.0]) 
@@ -1741,14 +1742,14 @@
                                              (query-and-cache ch layout)))])
                            (when draw-mode
                              (cairo_move_to cr 
-                                            (text-align-x/delta (+ x w) 0) 
-                                            (text-align-y/delta (+ y bl) 0))
+                                            (text-align-x/delta (fl+ x w) 0)
+                                            (text-align-y/delta (fl+ y bl) 0))
                              ;; Here's the draw command, which uses most of the time in this mode:
                              (let ([line (pango_layout_get_line_readonly layout 0)])
                                (if (eq? draw-mode 'draw)
                                    (pango_cairo_show_layout_line cr line)
                                    (pango_cairo_layout_line_path cr line))))
-                           (values (if blank? 0.0 (+ w lw)) (max h lh) (max d ld) (max a la)))))))
+                           (values (if blank? 0.0 (fl+ w lw)) (flmax h lh) (flmax d ld) (flmax a la)))))))
                  (when rotate? (cairo_restore cr))))))))
 
     (define/private (extract-only-run layout vec)
