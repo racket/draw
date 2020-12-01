@@ -15,6 +15,19 @@
 (provide post-script-dc%
          pdf-dc%)
 
+(define (pdf-set-all-md! s pss)
+  (define-syntax-rule (pdf-set-md! s pss key get-prop)
+    (let ([val (send pss get-prop)])
+      (when val
+        (cairo_pdf_surface_set_metadata s key val))))
+  (pdf-set-md! s pss 'CAIRO_PDF_METADATA_TITLE get-title)
+  (pdf-set-md! s pss 'CAIRO_PDF_METADATA_AUTHOR get-author)
+  (pdf-set-md! s pss 'CAIRO_PDF_METADATA_SUBJECT get-subject)
+  (pdf-set-md! s pss 'CAIRO_PDF_METADATA_KEYWORDS get-keywords)
+  (pdf-set-md! s pss 'CAIRO_PDF_METADATA_CREATOR get-creator)
+  (pdf-set-md! s pss 'CAIRO_PDF_METADATA_CREATE_DATE get-create-date)
+  (pdf-set-md! s pss 'CAIRO_PDF_METADATA_MOD_DATE get-mod-date))
+
 (define (make-dc-backend pdf?)
   (class default-dc-backend%
     (init [interactive #t]
@@ -89,12 +102,12 @@
                                           (values w h))]
                                [(writer proc) (make-port-writer file)])
                     (values
-                     ((if pdf?
-                          cairo_pdf_surface_create_for_stream 
-                          cairo_ps_surface_create_for_stream)
-                      proc
-                      w
-                      h)
+                     (let ([s ((if pdf?
+                                 cairo_pdf_surface_create_for_stream
+                                 cairo_ps_surface_create_for_stream)
+                               proc w h)])
+                       (when pdf? (pdf-set-all-md! s pss))
+                       s)
                      file
                      (not (output-port? fn))
                      writer
