@@ -1,12 +1,23 @@
 #lang racket/base
 (require racket/class
          racket/draw
+         racket/port
          rackunit)
 
 (define (check-image path)
   (define (go [solid? #f] [solid-bmp? solid?]
               #:bg-color [bg-color #f])
-    (define bm0 (read-bitmap path (if solid? 'unknown 'unknown/alpha)))
+    (define bm0 (read-bitmap path (if solid? 'unknown 'unknown/alpha)
+                             #:save-data-from-file? #t))
+
+    (let ()
+      (define bport (open-output-bytes))
+      (call-with-input-file path
+        (λ (port) (copy-port port bport)))
+      (check-equal? (vector (if solid? 'unknown 'unknown/alpha)
+                            #f
+                            (get-output-bytes bport))
+                    (send bm0 get-data-from-file)))
 
     (define w (send bm0 get-width))
     (define h (send bm0 get-height))

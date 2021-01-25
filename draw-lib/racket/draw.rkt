@@ -59,6 +59,7 @@
                                'bmp 'bmp/alpha)
                          (or/c (is-a?/c color%) #f)
                          any/c
+                         #:save-data-from-file? any/c
                          #:backing-scale (>/c 0.0)
                          #:try-@2x? any/c)
                         . ->* . (instanceof/c bitmap%/c))])

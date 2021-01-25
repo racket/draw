@@ -191,6 +191,7 @@ optional argument.}]}
                             'unknown/alpha]
                       [bg-color (or/c (is-a?/c color%) #f) #f]
                       [complain-on-failure? any/c #t]
+                      [#:get-data-from-file? get-data-from-file? any/c #f]
                       [#:backing-scale backing-scale (>/c 0.0) 1.0]
                       [#:try-@2x? try-@2x? any/c #f])
          (is-a?/c bitmap%)]{
@@ -207,8 +208,14 @@ but with @filepath{@"@"2x} added to the name (before the file suffix,
 if any). If the @filepath{@"@"2x} path exists, it is used instead of
 @racket[in], and @racket[backing-scale] is multiplied by @racket[2].
 
+If @racket[get-data-from-file?] is not @racket[#f], then the resulting
+bitmap's @method[bitmap% get-data-from-file] method will return
+the bytes from the file.
+
 @history[#:changed "1.1" @elem{Added the @racket[#:backing-scale]
-and @racket[#:try-@2x?] optional arguments.}]}
+and @racket[#:try-@2x?] optional arguments.}
+         #:changed "1.17" @elem{Added the @racket[#:get-data-from-file?]
+                                     argument.}]}
 
 
 @defproc[(recorded-datum->procedure [datum any/c]) ((is-a?/c dc<%>) . -> . void?)]{

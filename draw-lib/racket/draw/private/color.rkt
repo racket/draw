@@ -12,7 +12,8 @@
          color-alpha
          color-database<%>
          the-color-database
-         color->immutable-color)
+         color->immutable-color
+         normalize-color-name) ;; for use in the docs to make sure no names are missed
 
 (define-local-member-name
   r g b a
@@ -124,7 +125,7 @@
   (class* object% (color-database<%>)
     (super-new)
     (define/public (find-color name)
-      (let ([name (string-downcase name)])
+      (let ([name (normalize-color-name name)])
         (or (atomically (hash-ref color-objects name #f))
             (let ([v (hash-ref colors (string-foldcase name) #f)])
               (if v
@@ -138,6 +139,16 @@
       (sort (hash-map colors (lambda (k v) k)) string<?))))
 
 (define the-color-database (new color-database%))
+
+;; normalize-color-name : String -> String
+;; Normalizes a color name to the form used for keys in the `colors`
+;; table. This includes converting to lowercase and removing spaces.
+;; Except for "cadet blue" and "cornflower blue", those are different
+;; colors from "cadetblue" and "cornflowerblue" respectively.
+(define (normalize-color-name name)
+  (define lower (string-downcase name))
+  (cond [(member lower '("cadet blue" "cornflower blue"))  lower]
+        [else  (regexp-replace* #px"\\s+" lower "")]))
 
 (define colors
   #hash(("aliceblue" . #(240 248 255))
@@ -256,8 +267,12 @@
         ("blue" . #(0  0  255))
         ("blue violet" . #(138  43  226))
         ("brown" . #(132  60  36))
+        ; This "cadet blue" with a space has slightly different
+        ; numbers from the "cadetblue" with no spaces.
         ("cadet blue" . #(96  160  160))
         ("coral" . #(255  127  80))
+        ; This "cornflower blue" with a space has very different
+        ; numbers from the "cornflowerblue" with no spaces.
         ("cornflower blue" . #(68  64  108))
         ("cyan" . #(0  255  255))
         ("dark gray" . #(169  169  169))

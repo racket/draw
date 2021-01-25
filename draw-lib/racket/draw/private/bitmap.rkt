@@ -1,6 +1,8 @@
 #lang racket/base
 (require racket/class
          racket/unsafe/ops
+         racket/port
+         (prefix-in c: racket/contract)
          file/convertible
          ffi/unsafe
          (for-syntax racket/base)
@@ -29,7 +31,14 @@
                       quartz-bitmap%
                       win32-no-hwnd-bitmap%
                       install-bitmap-dc-class!
-                      surface-flush))
+                      surface-flush)
+         (c:contract-out
+          [specialize-unknown-kind
+           (c:-> input-port?
+                 (c:or/c 'unknown 'unknown/mask 'unknown/alpha)
+                 (c:or/c 'png/mask 'png/alpha 'png
+                         'jpeg 'gif 'bmp/alpha
+                         'bmp 'xbm 'xpm 'xbm))]))
 
 (define -bitmap-dc% #f)
 (define (install-bitmap-dc-class! v) (set! -bitmap-dc% v))
@@ -189,13 +198,14 @@
     (define loaded-mask #f)
     (define backing-scale 1.0)
     (define shadow #f)
+    (define data-from-file #f)
 
     (define alpha-s #f)
     (define alpha-s-up-to-date? #f)
 
     (super-new)
 
-    (set!-values (alt? width height b&w? alpha-channel? s loaded-mask backing-scale)
+    (set!-values (alt? width height b&w? alpha-channel? s loaded-mask backing-scale data-from-file)
       (case-args
        args
        [([alternate-bitmap-kind? a])
@@ -203,7 +213,8 @@
                 (alternate-bitmap-kind-width a)
                 (alternate-bitmap-kind-height a)
                 #f #t #f #f
-                (alternate-bitmap-kind-scale a))]
+                (alternate-bitmap-kind-scale a)
+                #f)]
        [([exact-positive-integer? w]
          [exact-positive-integer? h]
          [any? [b&w? #f]]
@@ -244,13 +255,16 @@
              ;; bitmap creation failed
              #f]))
          #f
-         (* 1.0 scale))]
+         (* 1.0 scale)
+         #f)]
        [([(make-alts path-string? input-port?) filename]
          [bitmap-file-kind-symbol? [kind 'unknown]]
          [(make-or-false color%) [bg-color #f]]
          [any? [complain-on-failure? #f]]
-         [positive-real? [scale 1.0]])
-        (let-values ([(s b&w?) (do-load-bitmap filename kind bg-color complain-on-failure?)]
+         [positive-real? [scale 1.0]]
+         [any? [save-data-from-file? #f]])
+        (let-values ([(s b&w? data-from-file)
+                      (do-load-bitmap filename kind bg-color complain-on-failure? save-data-from-file?)]
                      [(alpha?) (memq kind '(unknown/alpha gif/alpha jpeg/alpha
                                                           png/alpha xbm/alpha xpm/alpha
                                                           bmp/alpha))]
@@ -287,8 +301,10 @@
                         (and alpha? (not b&w?))
                         s
                         mask-bm
-                        (* 1.0 scale))
-                (values #f 0 0 #f #f #f #f (* 1.0 scale)))))]
+                        (* 1.0 scale)
+                        data-from-file)
+                (values #f 0 0 #f #f #f #f (* 1.0 scale)
+                        data-from-file))))]
        [([bytes? bstr]
          [exact-positive-integer? w]
          [exact-positive-integer? h])
@@ -303,7 +319,7 @@
                            (let ([s (* i bw)])
                              (subbytes bstr s (+ s bw)))))])
               (install-bytes-rows s w h rows #t #f #f #t))
-            (values #f w h #t #f s #f 1.0)))]
+            (values #f w h #t #f s #f 1.0 #f)))]
        (init-name 'bitmap%)))
 
     (when (not (= backing-scale 1.0))
@@ -334,6 +350,7 @@
     (def/public (get-depth) (if b&w? 1 32))
     (def/public (is-color?) (not b&w?))
     (def/public (has-alpha-channel?) (and alpha-channel? #t))
+    (def/public (get-data-from-file) data-from-file)
 
     (define/private (check-alternate who)
       (when alt?
@@ -373,7 +390,9 @@
     (define/public (load-file in
                               [kind 'unknown]
                               [bg #f]
-                              [complain-on-failure? #f])
+                              [complain-on-failure? #f]
+                              #:save-data-from-file?
+                              [save-data-from-file? #f])
       (check-alternate 'load-file)
       (unless (= 1 backing-scale)
         (error (method-name 'bitmap% 'load-file)
@@ -382,154 +401,180 @@
                 "  backing scale: ~a")
                backing-scale))
       (release-bitmap-storage)
-      (set!-values (s b&w?) (do-load-bitmap in kind bg complain-on-failure?))
+      (set!-values (s b&w? data-from-file)
+                   (do-load-bitmap in kind bg complain-on-failure? save-data-from-file?))
       (set! width (if s (cairo_image_surface_get_width s) 0))
       (set! height (if s (cairo_image_surface_get_height s) 0))
       (set! shadow (make-phantom-bytes (* width height 4)))
       (and s #t))
 
-    (define/private (do-load-bitmap in kind bg complain-on-failure?)
-      (if (path-string? in)
-          (with-handlers ([exn:fail? (lambda (exn)
-                                       (if complain-on-failure?
-                                           (raise exn)
-                                           (values #f #f)))])
-            (call-with-input-file*
-             in
-             (lambda (in) (do-load-bitmap in kind bg #f))))
-          (case kind
-           [(unknown unknown/mask unknown/alpha)
-            (let ([starts? (lambda (s)
-                             (equal? (peek-bytes (bytes-length s) 0 in) s))])
-              (cond
-               [(starts? #"\211PNG\r\n")
-                (do-load-bitmap in
-                                (if (eq? kind 'unknown/alpha)
-                                    'png/alpha
-                                    (if (eq? kind 'unknown/mask)
-                                        'png/mask
-                                        'png))
-                                bg
-                                complain-on-failure?)]
-               [(starts? #"\xFF\xD8\xFF")
-                (do-load-bitmap in 'jpeg bg complain-on-failure?)]
-               [(starts? #"GIF8")
-                (do-load-bitmap in 'gif bg complain-on-failure?)]
-               [(starts? #"BM")
-                (do-load-bitmap in
-                                (if (eq? kind 'unknown/alpha)
-                                    'bmp/alpha
-                                    'bmp)
-                                bg
-                                complain-on-failure?)]
-               [(starts? #"#define")
-                (do-load-bitmap in 'xbm bg complain-on-failure?)]
-               [(starts? #"/* XPM */")
-                (do-load-bitmap in 'xpm bg complain-on-failure?)]
-               [else
-                ;; unrecognized file type; try to parse as XBM
-                (do-load-bitmap in 'xbm bg complain-on-failure?)]))]
-           [(png png/mask png/alpha)
-            ;; Using the Cairo PNG support is about twice as fast, but we have
-            ;; less control, and there are problems making deallocation reliable
-            ;; (in case of exceptions or termination):
-            #;
-            (let ([proc (lambda (ignored bstr len)
-                          (read-bytes! (scheme_make_sized_byte_string bstr len 0) in)
-                          CAIRO_STATUS_SUCCESS)])
-              (with-holding
-               proc
-               (values (cairo_image_surface_create_from_png_stream proc) #f)))
-            ;; Using libpng directly:
-            (let-values ([(r w h b&w? alpha?) (create-png-reader
-                                               in
-                                               (memq kind '(png/mask png/alpha))
-                                               (and bg
-                                                    (list (send bg red)
-                                                          (send bg green)
-                                                          (send bg blue))))])
-              (let ([rows (read-png r)])
-                (destroy-png-reader r)
+    (define/private (do-load-bitmap in kind bg complain-on-failure? save-data-from-file?)
+      (cond
+        [(path-string? in)
+         (with-handlers ([exn:fail? (lambda (exn)
+                                      (if complain-on-failure?
+                                          (raise exn)
+                                          (values #f #f #f)))])
+           (call-with-input-file*
+               in
+             (lambda (in) (do-load-bitmap/port in kind bg save-data-from-file?))))]
+        [else
+         (do-load-bitmap/port in kind bg save-data-from-file?)]))
+
+    (define/private (do-load-bitmap/port in kind bg save-data-from-file?)
+      (cond
+        [save-data-from-file?
+         (define bp (open-output-bytes))
+         (define-values (pipe-in pipe-out) (make-pipe))
+         (define thd
+           (thread (λ ()
+                     (with-handlers ([exn:fail? void])
+                       (copy-port in pipe-out bp))
+                     (close-output-port pipe-out))))
+         (define-values (s b&w) (do-load-bitmap/dispatch pipe-in kind bg))
+         (thread-wait thd)
+         (values s b&w (vector-immutable kind
+                                         (if (and bg (not (send bg is-immutable?)))
+                                             (make-color (send bg red)
+                                                         (send bg green)
+                                                         (send bg blue))
+                                             bg)
+                                         (bytes->immutable-bytes (get-output-bytes bp))))]
+        [else
+         (define-values (s b&w) (do-load-bitmap/dispatch in kind bg))
+         (values s b&w #f)]))
+
+    (define/private (do-load-bitmap/dispatch in kind bg)
+      (case kind
+        [(unknown unknown/mask unknown/alpha)
+         (define new-kind (specialize-unknown-kind in kind))
+         (do-load-bitmap/dispatch/known in new-kind bg)]
+        [else
+         (do-load-bitmap/dispatch/known in kind bg)]))
+
+    (define/private (do-load-bitmap/dispatch/known in kind bg)
+      (case kind
+        [(unknown unknown/mask unknown/alpha)
+         (error 'do-load-bitmap/dispatch/known "got unknown: ~s" kind)]
+        [(png/alpha png/mask png)
+         (do-load-bitmap/png in kind bg)]
+        [(jpeg jpeg/alpha)
+         (do-load-bitmap/jpeg in kind bg)]
+        [(gif gif/mask gif/alpha)
+         (do-load-bitmap/gif in kind bg)]
+        [(xbm xbm/alpha)
+         (do-load-bitmap/xbm in kind bg)]
+        [(xpm xpm/alpha)
+         (do-load-bitmap/xpm in kind bg)]
+        [(bmp bmp/alpha)
+         (do-load-bitmap/bmp in kind bg)]
+        [else (values #f #f)]))
+
+    (define/private (do-load-bitmap/png in kind bg)
+      ;; Using the Cairo PNG support is about twice as fast, but we have
+      ;; less control, and there are problems making deallocation reliable
+      ;; (in case of exceptions or termination):
+      #;
+      (let ([proc (lambda (ignored bstr len)
+                    (read-bytes! (scheme_make_sized_byte_string bstr len 0) in)
+                    CAIRO_STATUS_SUCCESS)])
+        (with-holding
+            proc
+          (values (cairo_image_surface_create_from_png_stream proc) #f)))
+      ;; Using libpng directly:
+      (let-values ([(r w h b&w? alpha?) (create-png-reader
+                                         in
+                                         (memq kind '(png/mask png/alpha))
+                                         (and bg
+                                              (list (send bg red)
+                                                    (send bg green)
+                                                    (send bg blue))))])
+        (let ([rows (read-png r)])
+          (destroy-png-reader r)
+          (let* ([s (cairo_image_surface_create CAIRO_FORMAT_ARGB32 w h)]
+                 [pre? (and alpha? (eq? kind 'png/alpha))])
+            (install-bytes-rows s w h rows b&w? alpha? pre? #f)
+            (values s b&w?)))))
+
+    (define/private (do-load-bitmap/jpeg in kind bg)
+      (let ([d (create-decompress in)])
+        (guard-foreign-escape
+         (dynamic-wind
+          void
+          (lambda ()
+            (jpeg_read_header d #t)
+            (jpeg_start_decompress d)
+            (let ([w (jpeg_decompress_struct-output_width d)]
+                  [h (jpeg_decompress_struct-output_height d)]
+                  [c (jpeg_decompress_struct-output_components d)])
+              (let-values ([(samps bstr) (create-jpeg-sample-array d (* w c))]
+                           [(A R G B) (argb-indices)])
                 (let* ([s (cairo_image_surface_create CAIRO_FORMAT_ARGB32 w h)]
-                       [pre? (and alpha? (eq? kind 'png/alpha))])
-                  (install-bytes-rows s w h rows b&w? alpha? pre? #f)
-                  (values s b&w?))))]
-           [(jpeg jpeg/alpha)
-            (let ([d (create-decompress in)])
-              (guard-foreign-escape
-               (dynamic-wind
-                  void
-                  (lambda ()
-                    (jpeg_read_header d #t)
-                    (jpeg_start_decompress d)
-                    (let ([w (jpeg_decompress_struct-output_width d)]
-                          [h (jpeg_decompress_struct-output_height d)]
-                          [c (jpeg_decompress_struct-output_components d)])
-                      (let-values ([(samps bstr) (create-jpeg-sample-array d (* w c))]
-                                   [(A R G B) (argb-indices)])
-                        (let* ([s (cairo_image_surface_create CAIRO_FORMAT_ARGB32 w h)]
-                               [dest (begin
-                                       (cairo_surface_flush s)
-                                       (cairo_image_surface_get_data* s))]
-                               [dest-row-width (cairo_image_surface_get_stride s)])
-                          (for ([j (in-range h)])
-                            (jpeg_read_scanlines d samps 1)
-                            (let ([row (* dest-row-width j)])
-                              (for ([i (in-range w)])
-                                (let ([4i (fx+ row (fx* 4 i))]
-                                      [ci (fx* c i)])
-                                  (ptr-set! dest _ubyte (fx+ 4i A) 255)
-                                  (if (= c 1)
-                                      (let ([v (ptr-ref bstr _ubyte ci)])
-                                        (ptr-set! dest _ubyte (fx+ 4i R) v)
-                                        (ptr-set! dest _ubyte (fx+ 4i G) v)
-                                        (ptr-set! dest _ubyte (fx+ 4i B) v))
-                                      (begin
-                                        (ptr-set! dest _ubyte (fx+ 4i R) (ptr-ref bstr _ubyte ci))
-                                        (ptr-set! dest _ubyte (fx+ 4i G) (ptr-ref bstr _ubyte (fx+ ci 1)))
-                                        (ptr-set! dest _ubyte (fx+ 4i B) (ptr-ref bstr _ubyte (fx+ ci 2)))))))))
-                          (cairo_surface_mark_dirty s)
-                          (jpeg_finish_decompress d)
-                          (values s #f)))))
-                  (lambda ()
-                    (destroy-decompress d)))))]
-           [(gif gif/mask gif/alpha)
-            (let-values ([(w h rows) (gif->rgba-rows in)])
-              (let* ([s (cairo_image_surface_create CAIRO_FORMAT_ARGB32 w h)]
-                     [alpha? #t]
-                     [pre? (and alpha? (eq? kind 'gif/alpha))]
-                     [b&w? #f])
-                (install-bytes-rows s w h rows b&w? alpha? pre? #f)
-                (values s b&w?)))]
-           [(xbm xbm/alpha)
-            (let-values ([(w h rows) (read-xbm in)])
-              (if rows
-                  (let ([s (cairo_image_surface_create CAIRO_FORMAT_ARGB32 w h)])
-                    (install-bytes-rows s w h rows #t #f #f #t)
-                    (values s #t))
-                  (values #f #f)))]
-           [(xpm xpm/alpha)
-            (let-values ([(w h rows) (read-xpm in)])
-              (if rows
-                  (let ([s (cairo_image_surface_create CAIRO_FORMAT_ARGB32 w h)]
-                        [alpha? #t])
-                    (install-bytes-rows s w h rows #f alpha? #t #f)
-                    (values s #f))
-                  (values #f #f)))]
-           [(bmp bmp/alpha)
-            (let-values ([(w h rows) (read-bmp in #:background (and (eq? kind 'bmp)
-                                                                    (if bg
-                                                                        (list (color-red bg)
-                                                                              (color-green bg)
-                                                                              (color-blue bg))
-                                                                        (list 255 255 255))))])
-              (if rows
-                  (let ([s (cairo_image_surface_create CAIRO_FORMAT_ARGB32 w h)]
-                        [alpha? #t])
-                    (install-bytes-rows s w h rows #f alpha? #t #f)
-                    (values s #f))
-                  (values #f #f)))]
-           [else (values #f #f)])))
+                       [dest (begin
+                               (cairo_surface_flush s)
+                               (cairo_image_surface_get_data* s))]
+                       [dest-row-width (cairo_image_surface_get_stride s)])
+                  (for ([j (in-range h)])
+                    (jpeg_read_scanlines d samps 1)
+                    (let ([row (* dest-row-width j)])
+                      (for ([i (in-range w)])
+                        (let ([4i (fx+ row (fx* 4 i))]
+                              [ci (fx* c i)])
+                          (ptr-set! dest _ubyte (fx+ 4i A) 255)
+                          (if (= c 1)
+                              (let ([v (ptr-ref bstr _ubyte ci)])
+                                (ptr-set! dest _ubyte (fx+ 4i R) v)
+                                (ptr-set! dest _ubyte (fx+ 4i G) v)
+                                (ptr-set! dest _ubyte (fx+ 4i B) v))
+                              (begin
+                                (ptr-set! dest _ubyte (fx+ 4i R) (ptr-ref bstr _ubyte ci))
+                                (ptr-set! dest _ubyte (fx+ 4i G) (ptr-ref bstr _ubyte (fx+ ci 1)))
+                                (ptr-set! dest _ubyte (fx+ 4i B) (ptr-ref bstr _ubyte (fx+ ci 2)))))))))
+                  (cairo_surface_mark_dirty s)
+                  (jpeg_finish_decompress d)
+                  (values s #f)))))
+          (lambda ()
+            (destroy-decompress d))))))
+
+    (define/private (do-load-bitmap/gif in kind bg)
+      (let-values ([(w h rows) (gif->rgba-rows in)])
+        (let* ([s (cairo_image_surface_create CAIRO_FORMAT_ARGB32 w h)]
+               [alpha? #t]
+               [pre? (and alpha? (eq? kind 'gif/alpha))]
+               [b&w? #f])
+          (install-bytes-rows s w h rows b&w? alpha? pre? #f)
+          (values s b&w?))))
+
+    (define/private (do-load-bitmap/xbm in kind bg)
+      (let-values ([(w h rows) (read-xbm in)])
+        (if rows
+            (let ([s (cairo_image_surface_create CAIRO_FORMAT_ARGB32 w h)])
+              (install-bytes-rows s w h rows #t #f #f #t)
+              (values s #t))
+            (values #f #f))))
+
+    (define/private (do-load-bitmap/xpm in kind bg)
+      (let-values ([(w h rows) (read-xpm in)])
+        (if rows
+            (let ([s (cairo_image_surface_create CAIRO_FORMAT_ARGB32 w h)]
+                  [alpha? #t])
+              (install-bytes-rows s w h rows #f alpha? #t #f)
+              (values s #f))
+            (values #f #f))))
+
+    (define/private (do-load-bitmap/bmp in kind bg)
+      (let-values ([(w h rows) (read-bmp in #:background (and (eq? kind 'bmp)
+                                                              (if bg
+                                                                  (list (color-red bg)
+                                                                        (color-green bg)
+                                                                        (color-blue bg))
+                                                                  (list 255 255 255))))])
+        (if rows
+            (let ([s (cairo_image_surface_create CAIRO_FORMAT_ARGB32 w h)]
+                  [alpha? #t])
+              (install-bytes-rows s w h rows #f alpha? #t #f)
+              (values s #f))
+            (values #f #f))))
 
     ;; s : Cairo bitmap surface
     ;; w, h : width and height in pixels
@@ -1028,6 +1073,32 @@
                     (ptr-set! data _ubyte (+ q A) (if b&w? v 255)))))))
           (cairo_surface_mark_dirty s))))))
 
+(define (specialize-unknown-kind in kind)
+  (define (starts? s)
+    (equal? (peek-bytes (bytes-length s) 0 in) s))
+  (cond
+    [(starts? #"\211PNG\r\n")
+     (if (eq? kind 'unknown/alpha)
+         'png/alpha
+         (if (eq? kind 'unknown/mask)
+             'png/mask
+             'png))]
+    [(starts? #"\xFF\xD8\xFF")
+     'jpeg]
+    [(starts? #"GIF8")
+     'gif]
+    [(starts? #"BM")
+     (if (eq? kind 'unknown/alpha)
+         'bmp/alpha
+         'bmp)]
+    [(starts? #"#define")
+     'xbm]
+    [(starts? #"/* XPM */")
+     'xpm]
+    [else
+     ;; unrecognized file type; try to parse as XBM
+     'xbm]))
+
 (define/top (make-bitmap [exact-positive-integer? w]
                          [exact-positive-integer? h]
                          [any? [alpha? #t]]
@@ -1039,6 +1110,7 @@
                          [(make-or-false color%) [bg-color #f]]
                          [any? [complain-on-failure? #t]]
                          #:try-@2x? [any? [try-@2x? #f]]
+                         #:save-data-from-file? [any? [save-data-from-file? #f]]
                          #:backing-scale [nonnegative-real? [given-backing-scale 1.0]])
   (define-values (filename backing-scale)
     (cond
@@ -1053,7 +1125,8 @@
           (values new-filename (* 2 given-backing-scale))
           (values given-filename given-backing-scale))]
      [else (values given-filename given-backing-scale)]))
-  (make-object bitmap% filename kind bg-color complain-on-failure? backing-scale))
+  (make-object bitmap% filename kind bg-color complain-on-failure? backing-scale
+    save-data-from-file?))
 
 (define/top (make-monochrome-bitmap [exact-positive-integer? w]
                                     [exact-positive-integer? h]

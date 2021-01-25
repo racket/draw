@@ -39,7 +39,8 @@ A bitmap is convertible to @racket['png-bytes] through the
                               'unknown]
                         [bg-color (or/c (is-a?/c color%) #f) #f]
                         [complain-on-failure? any/c #f]
-                        [backing-scale (>/c 0.0) 1.0])
+                        [backing-scale (>/c 0.0) 1.0]
+                        [save-data-from-file? any/c #f])
                        ([bits bytes?]
                         [width exact-positive-integer?]
                         [height exact-positive-integer?]))]{
@@ -78,8 +79,11 @@ When a @racket[bits] byte string is provided: Creates a monochrome
  @racket[height] is larger than 8 times the length of @racket[bits],
  @|MismatchExn|.
 
+See @method[bitmap% get-data-from-file] for information on @racket[save-data-from-file?]
+
 @history[#:changed "1.1" @elem{Added the @racket[backing-scale]
-optional arguments.}]}
+optional arguments.}
+         #:changed "1.17" @elem{Added @racket[save-data-from-file?]}]}
 
 @defmethod[(get-argb-pixels [x exact-nonnegative-integer?]
                             [y exact-nonnegative-integer?]
@@ -113,6 +117,26 @@ Returns the bitmap's @tech{backing scale}.
 
 @history[#:added "1.1"]}
 
+@defmethod[(get-data-from-file)
+           (or/c (vector/c (or/c 'unknown 'unknown/mask 'unknown/alpha
+                                 'gif 'gif/mask 'gif/alpha
+                                 'jpeg 'jpeg/alpha
+                                 'png 'png/mask 'png/alpha
+                                 'xbm 'xbm/alpha 'xpm 'xpm/alpha
+                                 'bmp 'bmp/alpha)
+                           (or/c (is-a?/c color%) #f)
+                           (and/c bytes? immutable?)
+                           #:immutable? #t)
+                 #f)]{
+  If the bitmap data in this bitmap was read from a file
+  and the @racket[_save-data-from-file?] was passed with
+  a true value when it was read (either in the constructor
+  or in @method[bitmap% load-file]), then this method
+  returns the contents of the loaded file as bytes. Otherwise,
+  it returns @racket[#f].
+
+  @history[#:added "1.17"]
+}
 
 @defmethod[(get-depth)
            exact-nonnegative-integer?]{
@@ -206,7 +230,8 @@ Returns @racket[#f] if the bitmap is monochrome, @racket[#t] otherwise.
                                   'bmp 'bmp/alpha)
                             'unknown]
                       [bg-color (or/c (is-a?/c color%) #f) #f]
-                      [complain-on-failure? any/c #f])
+                      [complain-on-failure? any/c #f]
+                      [#:save-data-from-file? save-data-from-file? any/c #f])
            boolean?]{
 
 Loads a bitmap from a file format that read from @racket[in], unless
@@ -278,7 +303,11 @@ For PNG and BMP loading, if @racket[bg-color] is not @racket[#f], then it is
  are both undefined, a platform-specific default is used.
 
 After a bitmap is created, @method[bitmap% load-file] can be used
- only if the bitmap's @tech{backing scale} is @racket[1.0].}
+ only if the bitmap's @tech{backing scale} is @racket[1.0].
+
+  See @method[bitmap% get-data-from-file] for information on @racket[save-data-from-file?]
+
+  @history[#:changed "1.17" @elem{Added @racket[save-data-from-file?]}]}
 
 
 @defmethod[(make-dc)
