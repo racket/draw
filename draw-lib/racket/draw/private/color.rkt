@@ -88,10 +88,10 @@
            (e? a (color-alpha other))))
 
     (define/public (equal-hash-code-of hash-code)
-      (hash-code (list r g b a)))
+      (hash-code (list 'a4AkiYkhB7r/c r g b a)))
 
     (define/public (equal-secondary-hash-code-of hash-code)
-      (hash-code (list r g b a)))))
+      (hash-code (list 'lnyLTJZHivahI r g b a)))))
 
 (define color-red (class-field-accessor color% r))
 (define color-green (class-field-accessor color% g))
