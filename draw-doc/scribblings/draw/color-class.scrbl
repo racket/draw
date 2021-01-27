@@ -71,3 +71,10 @@ object using a color name, and see also @racket[make-color].
   are now always valid.)}
 
 }
+
+@section{Equality}
+
+We can compare instances of @racket[color%] using @racket[equal?]. Two
+@racket[color%] instances are equal if the red, green, blue, and alpha
+values are equal. I.e., a mutable and an immutable
+@racket[color%] instance are equal as long as their values are equal.
