@@ -21,7 +21,7 @@
   s-immutable?)
 
 (define color%
-  (class object%
+  (class* object% (equal<%>)
     (field [r 0]
            [g 0]
            [b 0]
@@ -79,7 +79,19 @@
       (if s-immutable?
           (error (method-name 'color% 'copy-from) "object is immutable")
           (begin (set (color-red c) (color-green c) (color-blue c) (color-alpha c))
-                 this)))))
+                 this)))
+
+    (define/public (equal-to? other e?)
+      (and (e? r (color-red other))
+           (e? g (color-green other))
+           (e? b (color-blue other))
+           (e? a (color-alpha other))))
+
+    (define/public (equal-hash-code-of hash-code)
+      (hash-code (list 'a4AkiYkhB7r/c r g b a)))
+
+    (define/public (equal-secondary-hash-code-of hash-code)
+      (hash-code (list 'lnyLTJZHivahI r g b a)))))
 
 (define color-red (class-field-accessor color% r))
 (define color-green (class-field-accessor color% g))
@@ -325,3 +337,4 @@
         ("white" . #(255  255  255))
         ("yellow" . #(255  255  0))
         ("yellow green" . #(154  205  50))))
+
