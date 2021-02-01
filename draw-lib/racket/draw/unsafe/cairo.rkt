@@ -26,6 +26,14 @@
 (define _cairo_pattern_t (_cpointer 'cairo_pattern_t))
 (define _cairo_font_options_t (_cpointer/null 'cairo_font_options_t))
 (define _CGContextRef (_cpointer 'CGContextRef))
+(define _cairo_pdf_metadata_t
+  (_enum '(CAIRO_PDF_METADATA_TITLE
+           CAIRO_PDF_METADATA_AUTHOR
+           CAIRO_PDF_METADATA_SUBJECT
+           CAIRO_PDF_METADATA_KEYWORDS
+           CAIRO_PDF_METADATA_CREATOR
+           CAIRO_PDF_METADATA_CREATE_DATE
+           CAIRO_PDF_METADATA_MOD_DATE)))
 
 (define-cstruct _cairo_matrix_t ([xx _double*]
                                  [yx _double*]
@@ -349,6 +357,8 @@
 (define-cairo cairo_pdf_surface_create_for_stream 
   _stream-surface-proc
   #:wrap stream-surface-allocator)
+(define-cairo cairo_pdf_surface_set_metadata
+  (_fun _cairo_surface_t _cairo_pdf_metadata_t _string/utf-8 -> _void))
 (define-cairo cairo_svg_surface_create_for_stream 
   _stream-surface-proc
   #:wrap stream-surface-allocator)
