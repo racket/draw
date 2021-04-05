@@ -877,7 +877,6 @@
         (send bm get-argb-pixels 18 18 1 1 s #:unscaled? #t)
         (test (list 255 155 155 155) 'unscaled-alpha-set-far (bytes->list s))))))
 
-
 (scaled-bm-test #t)
 (scaled-bm-test #f)
 

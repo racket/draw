@@ -3,7 +3,7 @@
 (define collection 'multi)
 
 (define deps
-  '(("base" #:version "7.6.0.13")
+  '(("base" #:version "8.0.0.8")
     ("draw-i386-macosx-3" #:platform "i386-macosx")
     ("draw-x86_64-macosx-3" #:platform "x86_64-macosx")
     ("draw-ppc-macosx-3" #:platform "ppc-macosx")

@@ -11,7 +11,6 @@
          "../unsafe/cairo.rkt"
          "../unsafe/png.rkt"
          "../unsafe/jpeg.rkt"
-         (only-in "../unsafe/callback.rkt" guard-foreign-escape)
          "../xbm.rkt"
          "../xpm.rkt"
          "../bmp.rkt"
@@ -498,8 +497,7 @@
 
     (define/private (do-load-bitmap/jpeg in kind bg)
       (let ([d (create-decompress in)])
-        (guard-foreign-escape
-         (dynamic-wind
+        (dynamic-wind
           void
           (lambda ()
             (jpeg_read_header d #t)
@@ -534,7 +532,7 @@
                   (jpeg_finish_decompress d)
                   (values s #f)))))
           (lambda ()
-            (destroy-decompress d))))))
+            (destroy-decompress d)))))
 
     (define/private (do-load-bitmap/gif in kind bg)
       (let-values ([(w h rows) (gif->rgba-rows in)])
@@ -744,7 +742,6 @@
              (let ([c (create-compress out)]
                    [width (*i width backing-scale)]
                    [height (*i height backing-scale)])
-               (guard-foreign-escape
                  (dynamic-wind
                    void
                    (lambda ()
@@ -772,7 +769,7 @@
                                  (ptr-set! bstr _ubyte (+ ci 2) (ptr-ref dest _ubyte (+ row (+ 4i B)))))))
                            (jpeg_write_scanlines c samps 1))))
                      (jpeg_finish_compress c))
-                   (lambda () (destroy-compress c)))))]
+                   (lambda () (destroy-compress c))))]
             [(bmp)
              (define bstr (make-bytes (* width height 4)))
              (get-argb-pixels 0 0 width height bstr #:unscaled? #t)

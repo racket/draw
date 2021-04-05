@@ -100,8 +100,8 @@
                      -> _void)))
 
 (define-png png_create_info_struct (_fun _png_structp -> _png_infop))
-(define-png png_read_info (_fun _png_structp _png_infop -> _void))
-(define-png png_read_end (_fun _png_structp _png_infop -> _void))
+(define-png png_read_info (_fun #:callback-exns? callback-atomic? _png_structp _png_infop -> _void))
+(define-png png_read_end (_fun #:callback-exns? callback-atomic? _png_structp _png_infop -> _void))
 (define-png png_write_info (_fun _png_structp _png_infop -> _void))
 
 (define-png png_read_update_info (_fun _png_structp _png_infop -> _void))
@@ -156,11 +156,11 @@
                                    -> _void))
 (define-png png_get_io_ptr (_fun _png_structp -> _pointer))
 
-(define-png png_get_rowbytes (_fun _png_structp _png_infop -> _uint32))
-(define-png png_read_rows (_fun _png_structp _pointer #;(_vector i _bytes) _pointer _uint32 -> _void))
-(define-png png_write_image (_fun _png_structp _pointer #;(_vector i _bytes) -> _void))
+(define-png png_get_rowbytes (_fun #:callback-exns? callback-atomic? _png_structp _png_infop -> _uint32))
+(define-png png_read_rows (_fun #:callback-exns? callback-atomic? _png_structp _pointer #;(_vector i _bytes) _pointer _uint32 -> _void))
+(define-png png_write_image (_fun #:callback-exns? callback-atomic? _png_structp _pointer #;(_vector i _bytes) -> _void))
 
-(define-png png_write_end (_fun _png_structp _png_infop -> _void))
+(define-png png_write_end (_fun #:callback-exns? callback-atomic? _png_structp _png_infop -> _void))
 
 (define-png png_get_valid (_fun _png_structp _png_infop _uint32 -> _uint32))
 (define-png png_get_bKGD (_fun _png_structp _png_infop (p : (_ptr o _png_color_16-pointer/null)) -> (r : _bool) -> (and r p)))
@@ -326,19 +326,18 @@
     rows))
 
 (define (read-png reader)
-  (guard-foreign-escape
-   (let* ([row-bytes (png_get_rowbytes (reader-png reader) (reader-info reader))]
-          [rows (malloc-rows (reader-h reader) row-bytes)])
-     (for ([i (in-range (reader-num-passes reader))])
-       (png_read_rows (reader-png reader) rows #f (reader-h reader)))
-     (png_read_end (reader-png reader) (reader-info reader))
-     (list->vector
-      (for/list ([i (in-range (reader-h reader))])
-        (define p (ptr-ref rows _pointer i))
-        (define bstr (make-bytes row-bytes))
-        (memcpy bstr p row-bytes)
-        (void/reference-sink rows) ; keep alive until memcpy is done
-        bstr)))))
+  (let* ([row-bytes (png_get_rowbytes (reader-png reader) (reader-info reader))]
+         [rows (malloc-rows (reader-h reader) row-bytes)])
+    (for ([i (in-range (reader-num-passes reader))])
+      (png_read_rows (reader-png reader) rows #f (reader-h reader)))
+    (png_read_end (reader-png reader) (reader-info reader))
+    (list->vector
+     (for/list ([i (in-range (reader-h reader))])
+       (define p (ptr-ref rows _pointer i))
+       (define bstr (make-bytes row-bytes))
+       (memcpy bstr p row-bytes)
+       (void/reference-sink rows) ; keep alive until memcpy is done
+       bstr))))
 
 (define (destroy-png-reader reader)
   (when (reader-png reader)
@@ -385,18 +384,17 @@
     (make-writer png info ob)))
 
 (define (write-png writer vector-of-rows)
-  (guard-foreign-escape
-   (if (zero? (vector-length vector-of-rows))
-       (png_write_image (writer-png writer) #f)
-       (let* ([h (vector-length vector-of-rows)]
-              [w (bytes-length (vector-ref vector-of-rows 0))]
-              [rows (malloc-rows h w)])
-         (for/list ([i (in-range h)])
-           (memcpy (ptr-ref rows _pointer i)
-                   (vector-ref vector-of-rows i)
-                   w))
-         (png_write_image (writer-png writer) rows)))
-   (png_write_end (writer-png writer) (writer-info writer)))
+  (if (zero? (vector-length vector-of-rows))
+      (png_write_image (writer-png writer) #f)
+      (let* ([h (vector-length vector-of-rows)]
+             [w (bytes-length (vector-ref vector-of-rows 0))]
+             [rows (malloc-rows h w)])
+        (for/list ([i (in-range h)])
+          (memcpy (ptr-ref rows _pointer i)
+                  (vector-ref vector-of-rows i)
+                  w))
+        (png_write_image (writer-png writer) rows)))
+  (png_write_end (writer-png writer) (writer-info writer))
   (flush-sanitized-output (writer-info writer)))
 
 (define (destroy-png-writer writer)

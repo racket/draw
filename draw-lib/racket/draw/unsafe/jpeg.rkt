@@ -71,7 +71,7 @@
 
 (define-jpeg/private jpeg_std_error (_fun _jpeg_error_mgr-pointer -> _jpeg_error_mgr-pointer))
 
-(define-jpeg/private jpeg_CreateDecompress/test (_fun _pointer _int _int -> _void)
+(define-jpeg/private jpeg_CreateDecompress/test (_fun #:callback-exns? callback-atomic? _pointer _int _int -> _void)
   #:c-id jpeg_CreateDecompress)
 
 ;; jpeglib offers no way to get the library version number dynamically,
@@ -84,8 +84,7 @@
       (set-jpeg_error_mgr-error_exit! e (cast error-exit (_fun #:atomic? callback-atomic?
                                                                _j_common_ptr -> _void) _fpointer))
       (let ([s (with-handlers ([exn:fail? (lambda (exn) (exn-message exn))])
-                 (guard-foreign-escape
-                  (jpeg_CreateDecompress/test m 0 dummy-size))
+                 (jpeg_CreateDecompress/test m 0 dummy-size)
                  "")])
         (free m)
         (free e)
@@ -710,17 +709,17 @@
 
 (define-jpeg/private jpeg_CreateDecompress (_fun _j_decompress_ptr _int _int -> _void))
 (define-jpeg/private jpeg_resync_to_restart _fpointer) ; (_fun _j_decompress_ptr _int -> _jbool))
-(define-jpeg jpeg_read_header (_fun _j_decompress_ptr _jbool -> _void))
-(define-jpeg jpeg_start_decompress (_fun _j_decompress_ptr -> _void))
-(define-jpeg jpeg_read_scanlines (_fun _j_decompress_ptr _pointer _int -> _void))
-(define-jpeg jpeg_finish_decompress (_fun _j_decompress_ptr -> _int))
+(define-jpeg jpeg_read_header (_fun #:callback-exns? callback-atomic? _j_decompress_ptr _jbool -> _void))
+(define-jpeg jpeg_start_decompress (_fun #:callback-exns? callback-atomic? _j_decompress_ptr -> _void))
+(define-jpeg jpeg_read_scanlines (_fun #:callback-exns? callback-atomic? _j_decompress_ptr _pointer _int -> _void))
+(define-jpeg jpeg_finish_decompress (_fun #:callback-exns? callback-atomic? _j_decompress_ptr -> _int))
 
 (define-jpeg/private jpeg_CreateCompress (_fun _j_compress_ptr _int _int -> _void))
 (define-jpeg jpeg_set_defaults (_fun _j_compress_ptr -> _int))
 (define-jpeg jpeg_set_quality (_fun _j_compress_ptr _int _jbool -> _int))
-(define-jpeg jpeg_start_compress (_fun _j_compress_ptr _jbool -> _void))
-(define-jpeg jpeg_write_scanlines (_fun _j_compress_ptr _pointer _int -> _void))
-(define-jpeg/private jpeg_finish_compress* (_fun _j_compress_ptr -> _int)
+(define-jpeg jpeg_start_compress (_fun #:callback-exns? callback-atomic? _j_compress_ptr _jbool -> _void))
+(define-jpeg jpeg_write_scanlines (_fun #:callback-exns? callback-atomic? _j_compress_ptr _pointer _int -> _void))
+(define-jpeg/private jpeg_finish_compress* (_fun #:callback-exns? callback-atomic? _j_compress_ptr -> _int)
   #:c-id jpeg_finish_compress)
 
 (define (jpeg_finish_compress m)
