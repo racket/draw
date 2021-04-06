@@ -46,14 +46,6 @@
 (define-ffi-definer define-pangowin32 pangowin32-lib
   #:provide provide)
 
-;; Pango's Core Text back-end can somehow go wrong if we're going to eventually
-;; use AppKit but don't load AppKit it before using functions such as
-;; `pango_cairo_font_map_get_default'. So, force AppKit now for the platform
-;; where the Core Text back-end is used:
-(when (equal? "x86_64-macosx/3m"
-              (path->string (system-library-subpath)))
-  (void (ffi-lib (format "/System/Library/Frameworks/AppKit.framework/AppKit"))))
-
 ;; ALLOCATION NOTE: since Pango calls into Cairo, it has the same
 ;; allocation constraints on arguments as Cairo functions; see
 ;; "cairo.rkt".
