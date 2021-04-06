@@ -584,7 +584,13 @@
 
     (define/override (erase)
       (super erase)
-      (reset-recording))
+      ;; If there's no clipping, then old drawing commnds will have no
+      ;; effect after erasing, so we can forget them:
+      (when (not (get-clipping-region))
+        (reset-recording))
+      (when (continue-recording?)
+        (record (lambda (dc) (send dc erase))
+                (lambda () '(erase)))))
 
     ;; For the compsable part of the DC, we write things out the long way.
     ;; For everythign else, we use `define/record'.

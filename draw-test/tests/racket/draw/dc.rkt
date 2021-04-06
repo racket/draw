@@ -677,6 +677,35 @@
   (for ([i (in-range 0 (* 20 20 4) 4)])
     (test 0 'record-dc-clipping-byte (bytes-ref s i))))
 
+;; `erase` should not discard preceding drawing if there's clipping:
+(let ()
+  (define (thing dc)
+    (define b (send dc get-brush))
+    (send dc set-brush "black" 'solid)
+    (send dc draw-rectangle 0 0 100 100)
+    (send dc set-brush b)
+    ;; whiteout
+    (define r (send dc get-clipping-region))
+    (send dc set-clipping-rect 0 0 50 50)
+    (send dc erase)
+    (send dc set-clipping-region r))
+
+  (define bit (make-object bitmap% 100 100))
+  (thing (send bit make-dc))
+
+  (define dc2 (new record-dc% [width 100] [height 100]))
+  (thing dc2)
+  
+  (define x (send dc2 get-recorded-procedure))
+  (define bit1 (make-object bitmap% 100 100))
+  (x (send bit1 make-dc))
+
+  (define r (make-bytes (* 100 100 4)))
+  (define r2 (make-bytes (* 100 100 4)))
+  (send bit get-argb-pixels 0 0 100 100 r)
+  (send bit1 get-argb-pixels 0 0 100 100 r2)
+  (test #t 'recorded-clear (equal? r r2)))
+
 ;; ----------------------------------------
 
 (let ([bm (make-object bitmap% 1 1)])
