@@ -9,7 +9,7 @@
   (require
     (only-in racket/class
              make-object)
-    (only-in "../../../../draw-lib/racket/draw/private/color.rkt"
+    (only-in racket/draw/private/color
              color%
              color->immutable-color)
     (only-in rackunit
