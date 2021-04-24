@@ -73,6 +73,12 @@
 (define-cairo cairo_quartz_surface_get_cg_context
   (_cfun _cairo_surface_t -> (_or-null _CGContextRef))
   #:make-fail make-not-available)
+(define-cairo cairo_quartz_get_cg_context_with_clip
+  (_cfun _cairo_t -> (_or-null _CGContextRef))
+  #:make-fail make-not-available)
+(define-cairo cairo_quartz_finish_cg_context_with_clip
+  (_cfun _cairo_t -> _void)
+  #:make-fail make-not-available)
 
 (define-cairo cairo_win32_surface_create
   (_cfun _pointer -> _cairo_surface_t)

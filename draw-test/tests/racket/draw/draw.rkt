@@ -695,7 +695,24 @@
 						  (send dc draw-rectangle x y w h)
 						  (send dc draw-line x (+ y (- h d)) (+ x w) (+ y (- h d))))))))
 					(loop (cdr fam) (cdr stl) (cdr wgt) (cdr sze) x (+ y h) #f)))))
-				(send dc set-pen save-pen)))
+				(send dc set-pen save-pen))
+
+                              (send dc draw-text (string
+                                                  #\"
+                                                  ;; face
+                                                  #\U1F600
+                                                  ;; rocket
+                                                  #\U1F680
+                                                  #\")
+                                    320 115 kern?)
+                              (send dc draw-text (string
+                                                  #\"
+                                                  ;; girl with modifier
+                                                  #\U1F9D2 #\U1F3FD
+                                                  ;; 1 with modifier
+                                                  #\1 #\Ufe0f #\U20e3
+                                                  #\")
+                                    320 135 kern?))
 
                             ;; Text paths:
                             (let ([p (make-object dc-path%)]
@@ -1215,7 +1232,7 @@
                                        [w 30]
                                        [s 10])
                                    (let xloop ([x 0])
-                                     (if (> x 300)
+                                     (if (> x 500)
                                          (send dc set-clipping-region r)
                                          (let yloop ([y 0])
                                            (if (> y 500)

@@ -21,7 +21,8 @@
          "dc-path.rkt"
          "point.rkt"
          "transform.rkt"
-         "local.rkt")
+         "local.rkt"
+         "emoji.rkt")
 
 (provide dc-mixin
          dc-backend<%>
@@ -1502,16 +1503,42 @@
               ;; because we may need to implement font substitution ourselves, which
               ;; breaks the string into multiple layouts.
               (let loop ([s s] [draw-mode draw-mode] [measured? #f] [unrotate? rotate?]
-                         [w 0.0] [h 0.0] [d 0.0] [a 0.0])
+                         [w 0.0] [h 0.0] [d 0.0] [a 0.0] [also-measure? #f])
                 (cond
                  [(or (not s)
                       (equal? s "")) ; can happen if last char is substituted
                   (when unrotate? (cairo_restore cr))
                   (values w h d a)]
+                 [(find-emoji-sequence s)
+                  => (lambda (start+end)
+                       (define start (car start+end))
+                       (define end (cdr start+end))
+                       (cond
+                         [(and draw-mode (not measured?) (or (start . > . 0)
+                                                             (end . < . (string-length s))))
+                          ;; It's going to take multiple layouts, so first gather measurements.
+                          (let-values ([(w2 h d a) (loop s #f #f #f w h d a #t)])
+                            ;; draw again, supplying `h', `d', and `a' for the whole line
+                            (loop s draw-mode #t unrotate? w h d a also-measure?))]
+                         [else
+                          (let-values ([(w h d a) (if (= start 0)
+                                                      (values w h d a)
+                                                      (loop (substring s 0 start) draw-mode measured? #f w h d a #t))])
+                            (define str (substring s start end))
+                            (define-values (nw nh nd na) (emoji-extent font str))
+                            (when (eq? draw-mode 'draw)
+                              (let ([bl (if measured? (- h d) (- nh nd))])
+                                (draw-emoji this cr
+                                            (text-align-x/delta (fl+ x w) 0)
+                                            (text-align-y/delta (fl+ y bl) 0)
+                                            font
+                                            str)))
+                            (loop (substring s end) draw-mode measured? unrotate?
+                                  (fl+ w nw) (flmax h nh) (flmax d nd) (flmax a na)
+                                  also-measure?))]))]
                  [else
                   (pango_cairo_update_context cr context)
-                  (let ([layout (pango_layout_new context)]
-                        [next-s #f])
+                  (let ([layout (pango_layout_new context)])
                     (pango_layout_set_font_description layout desc)
                     (install-attributes! layout attrs)
                     (pango_layout_set_text layout s)
@@ -1524,27 +1551,27 @@
                                       (let ([len (string-length s)])
                                         (let loop ([lo 0] [hi (sub1 len)] [i (quotient len 2)])
                                           (cond
-                                           [(= lo hi) lo]
-                                           [else
-                                            (pango_layout_set_text layout (substring s lo i))
-                                            (if (zero? (pango_layout_get_unknown_glyphs_count layout))
-                                                ;; ok so far, so look higher
-                                                (if (= i lo)
-                                                    lo
-                                                    (loop i hi (+ i (quotient (- hi i) 2))))
-                                                ;; still not ok; look lower
-                                                (loop lo i (+ lo (quotient (- i lo) 2))))])))])
+                                            [(= lo hi) lo]
+                                            [else
+                                             (pango_layout_set_text layout (substring s lo i))
+                                             (if (zero? (pango_layout_get_unknown_glyphs_count layout))
+                                                 ;; ok so far, so look higher
+                                                 (if (= i lo)
+                                                     lo
+                                                     (loop i hi (+ i (quotient (- hi i) 2))))
+                                                 ;; still not ok; look lower
+                                                 (loop lo i (+ lo (quotient (- i lo) 2))))])))])
                                  (pango_layout_set_text layout (substring s 0 (max 1 ok-count)))
                                  (when (zero? ok-count)
-                                   ;; find a face that works for the long character:
+                                   ;; find a face that works for the initial character:
                                    (install-alternate-face (string-ref s 0) layout font desc attrs context))
                                  (substring s (max 1 ok-count))))])
                       (cond
                        [(and draw-mode next-s (not measured?))
                         ;; It's going to take multiple layouts, so first gather measurements.
-                        (let-values ([(w2 h d a) (loop s #f #f #f w h d a)])
+                        (let-values ([(w2 h d a) (loop s #f #f #f w h d a #t)])
                           ;; draw again, supplying `h', `d', and `a' for the whole line
-                          (loop s draw-mode #t unrotate? w h d a))]
+                          (loop s draw-mode #t unrotate? w h d a also-measure?))]
                        [else
                         (let ([logical (make-PangoRectangle 0 0 0 0)])
                           (pango_layout_get_extents layout #f logical)
@@ -1564,7 +1591,7 @@
                                       (pango_cairo_show_layout_line cr line)
                                       (pango_cairo_layout_line_path cr line)))))
                             (cond
-                             [(and draw-mode (not next-s))
+                             [(and draw-mode (not next-s) (not also-measure?))
                               (g_object_unref layout)
                               (when unrotate? (cairo_restore cr))]
                              [else
@@ -1575,7 +1602,8 @@
                                                   (->fl PANGO_SCALE))))]
                                     [na 0.0])
                                 (loop next-s draw-mode measured? unrotate?
-                                      (fl+ w nw) (flmax h nh) (flmax d nd) (flmax a na)))])))])))]))
+                                      (fl+ w nw) (flmax h nh) (flmax d nd) (flmax a na)
+                                      also-measure?))])))])))]))
               ;; This is character-by-character mode. It uses a cached per-character+font layout
               ;;  object.
               (let ([cache (if (or combine?
@@ -1656,6 +1684,7 @@
                                             [v (hash-ref cache chi #f)])
                                        (and font
                                             v
+                                            (not (emoji? ch))
                                             ;; Need the same font for all glyphs for the fast path:
                                             (ptr-equal? first-font font)
                                             ;; The slow path uses a top-left corner, this fast
@@ -1727,7 +1756,7 @@
                                         h)))
                                0.0)])
                      (for/fold ([w 0.0] [h 0.0] [d 0.0] [a 0.0]) 
-                         ([ch (in-string s)])
+                               ([ch (in-string s)])
                        (let ([layout (vector-ref (hash-ref layouts (char->integer ch)) 0)])
                          (let-values ([(lw lh ld la flh)
                                        (let ([v (and cache (hash-ref cache (char->integer ch) #f))])
@@ -1741,14 +1770,23 @@
                                              ;; Query and record size:
                                              (query-and-cache ch layout)))])
                            (when draw-mode
-                             (cairo_move_to cr 
+                             (cond
+                               [(and (emoji? ch)
+                                     (not (eq? draw-mode 'path)))
+                                (draw-emoji this cr
                                             (text-align-x/delta (fl+ x w) 0)
-                                            (text-align-y/delta (fl+ y bl) 0))
-                             ;; Here's the draw command, which uses most of the time in this mode:
-                             (let ([line (pango_layout_get_line_readonly layout 0)])
-                               (if (eq? draw-mode 'draw)
-                                   (pango_cairo_show_layout_line cr line)
-                                   (pango_cairo_layout_line_path cr line))))
+                                            (text-align-y/delta (fl+ y bl) 0)
+                                            font
+                                            ch)]
+                               [else
+                                (cairo_move_to cr 
+                                               (text-align-x/delta (fl+ x w) 0)
+                                               (text-align-y/delta (fl+ y bl) 0))
+                                ;; Here's the draw command, which uses most of the time in this mode:
+                                (let ([line (pango_layout_get_line_readonly layout 0)])
+                                  (if (eq? draw-mode 'draw)
+                                      (pango_cairo_show_layout_line cr line)
+                                      (pango_cairo_layout_line_path cr line)))]))
                            (values (if blank? 0.0 (fl+ w lw)) (flmax h lh) (flmax d ld) (flmax a la)))))))
                  (when rotate? (cairo_restore cr))))))))
 
