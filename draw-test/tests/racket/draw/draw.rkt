@@ -712,7 +712,14 @@
                                                   ;; 1 with modifier
                                                   #\1 #\Ufe0f #\U20e3
                                                   #\")
-                                    320 135 kern?))
+                                    320 135 kern?)
+                              (let ([f (send dc get-font)])
+                                (send dc set-font (make-font #:size (floor (* 3/2 (send f get-point-size)))))
+                                (send dc draw-text (string
+                                                    ;; rocket
+                                                    #\U1F680)
+                                      240 185 kern?)
+                                (send dc set-font f)))
 
                             ;; Text paths:
                             (let ([p (make-object dc-path%)]

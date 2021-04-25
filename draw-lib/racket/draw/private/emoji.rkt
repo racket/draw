@@ -160,6 +160,7 @@
          (cond
            [(not (cairo_quartz_surface_get_cg_context (cairo_get_target cr)))
             ;; Draw to a bitmap, then copy to cr
+            (define key (cons ch-or-str (send font get-point-size)))
             (define bm+a (or (hash-ref emoji-bm-cache ch-or-str #f)
                              (let ()
                                (define-values (w a d l) (CTLineGetTypographicBounds line))
@@ -169,8 +170,9 @@
                                (send (send bm make-dc) in-cairo-context
                                      (lambda (bm-cr)
                                        (draw-loop bm-cr 0.0 a)))
-                               (send bm save-file "/tmp/tmp.png" 'png)
-                               (cons bm a))))
+                               (define bm+a (cons bm a))
+                               (hash-set! emoji-bm-cache key bm+a)
+                               bm+a)))
             (define bm (car bm+a))
             (define ty (- y (cdr bm+a)))
             (define w (send bm get-width))
