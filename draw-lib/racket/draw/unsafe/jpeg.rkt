@@ -625,10 +625,13 @@
      (free m))))
 
 (define create-decompress
+  (lambda (in)
+    (create-decompress/sanitized (sanitize-input-port in))))
+
+(define create-decompress/sanitized
   ((allocator destroy-decompress)
    (lambda (in)
-     (let ([in (sanitize-input-port in)]
-           [m (ptr-cast (malloc _jpeg_decompress_struct 'raw) _jpeg_decompress_struct-pointer)]
+     (let ([m (ptr-cast (malloc _jpeg_decompress_struct 'raw) _jpeg_decompress_struct-pointer)]
            [s (ptr-cast (malloc _jpeg_source_mgr 'raw) _jpeg_source_mgr-pointer)]
            [e (ptr-cast (malloc sizeof_jpeg_error_mgr 'raw) _jpeg_error_mgr-pointer)]
            [b (malloc 'raw BUFFER-SIZE)]
@@ -668,14 +671,18 @@
      (free m))))
 
 (define create-compress
+  (lambda (out)
+    (define funs (box null))
+    (create-compress/sanitized (sanitize-output-port out #:key funs)
+                               funs)))
+
+(define create-compress/sanitized
   ((allocator destroy-compress)
-   (lambda (orig-out)
+   (lambda (out funs)
      (let* ([m (ptr-cast (malloc _jpeg_compress_struct 'raw) _jpeg_compress_struct-pointer)]
-            [out (sanitize-output-port orig-out #:key m)]
             [d (ptr-cast (malloc _jpeg_destination_mgr 'raw) _jpeg_destination_mgr-pointer)]
             [e (ptr-cast (malloc sizeof_jpeg_error_mgr 'raw) _jpeg_error_mgr-pointer)]
-            [b (malloc 'raw BUFFER-SIZE)]
-            [funs (box null)])
+            [b (malloc 'raw BUFFER-SIZE)])
        (set-jpeg_compress_struct-err! m (jpeg_std_error e))
        (set-jpeg_error_mgr-error_exit! e (cast error-exit
                                                (_fun #:keep funs _j_common_ptr -> _void)
@@ -723,8 +730,9 @@
   #:c-id jpeg_finish_compress)
 
 (define (jpeg_finish_compress m)
+  (define key (cdr (ptr-ref (jpeg_compress_struct-client_data m) _scheme)))
   (jpeg_finish_compress* m)
-  (flush-sanitized-output m))
+  (flush-sanitized-output key))
 
 (provide create-decompress
          destroy-decompress
