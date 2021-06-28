@@ -224,7 +224,8 @@ See also @method[dc<%> set-smoothing] for information on the
            void?]{
 
 Draws lines using a list @racket[points] of points, adding @racket[xoffset]
- and @racket[yoffset] to each point. A pair is treated as a point where the
+ and @racket[yoffset] to each point and using the pen's join style to connect
+ a line and the next line at the shared point. A pair is treated as a point where the
  @racket[car] of the pair is the x-value and the @racket[cdr] is the y-value.
  The current pen is used for
  drawing the lines.
