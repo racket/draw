@@ -254,6 +254,11 @@
 (define-pango pango_attr_fallback_new (_pfun _bool -> PangoAttribute)
   #:wrap (allocator pango_attribute_destroy))
 
+(define-pango pango_attr_foreground_new (_pfun _uint16 _uint16 _uint16 -> PangoAttribute)
+  #:wrap (allocator pango_attribute_destroy))
+(define-pango pango_attr_foreground_alpha_new (_pfun _uint16 -> PangoAttribute)
+  #:wrap (allocator pango_attribute_destroy))
+
 (define-pango pango_layout_set_attributes (_pfun PangoLayout PangoAttrList -> _void))
 
 (define-pango pango_font_map_list_families (_pfun PangoFontMap
