@@ -257,7 +257,8 @@
 (define-pango pango_attr_foreground_new (_pfun _uint16 _uint16 _uint16 -> PangoAttribute)
   #:wrap (allocator pango_attribute_destroy))
 (define-pango pango_attr_foreground_alpha_new (_pfun _uint16 -> PangoAttribute)
-  #:wrap (allocator pango_attribute_destroy))
+  #:wrap (allocator pango_attribute_destroy)
+  #:fail (lambda () (lambda (alpha) #f)))
 
 (define-pango pango_layout_set_attributes (_pfun PangoLayout PangoAttrList -> _void))
 
