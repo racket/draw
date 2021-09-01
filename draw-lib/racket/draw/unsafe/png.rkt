@@ -228,8 +228,11 @@
 (define (read-png-bytes png p len)
   (define bstr (make-bytes len))
   (define n (read-bytes! bstr (car (ptr-ref (png_get_io_ptr png) _scheme))))
-  (memcpy p bstr n)
-  n)
+  (cond
+    [(eof-object? n) 0]
+    [else
+     (memcpy p bstr n)
+     n]))
 
 (define free-cell ((deallocator) free-immobile-cell))
 (define make-cell ((allocator free-cell) malloc-immobile-cell))
