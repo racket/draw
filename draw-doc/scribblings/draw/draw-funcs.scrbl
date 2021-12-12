@@ -114,7 +114,8 @@ or @racket[the-color-database].}
                                                  'smoothed 'unsmoothed) 
                                  'default]
                     [#:size-in-pixels? size-in-pixels? any/c #f]
-                    [#:hinting hinting (or/c 'aligned 'unaligned) 'aligned])
+                    [#:hinting hinting (or/c 'aligned 'unaligned) 'aligned]
+                    [#:feature-settings feature-settings font-feature-settings/c (hash)])
          (is-a?/c font%)]{
 
 Creates a @racket[font%] instance. This procedure provides an
@@ -125,7 +126,8 @@ equivalent but more convenient interface compared to using
          #:changed "1.14" @elem{Changed @racket[weight] to allow integer values and the symbols
                                 @racket['thin], @racket['ultralight], @racket['semilight],
                                 @racket['book], @racket['medium], @racket['semibold],
-                                @racket['ultrabold], @racket['heavy], and @racket['ultraheavy].}]}
+                                @racket['ultrabold], @racket['heavy], and @racket['ultraheavy].}
+         #:changed "1.19" @elem{Added the optional @racket[feature-settings] argument.}]}
 
 
 @defproc[(make-monochrome-bitmap [width exact-positive-integer?]

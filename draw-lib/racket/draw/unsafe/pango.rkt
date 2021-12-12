@@ -253,6 +253,9 @@
   #:wrap (allocator pango_attribute_destroy))
 (define-pango pango_attr_fallback_new (_pfun _bool -> PangoAttribute)
   #:wrap (allocator pango_attribute_destroy))
+(define-pango pango_attr_font_features_new (_pfun _string -> PangoAttribute)
+  #:wrap (allocator pango_attribute_destroy)
+  #:make-fail make-not-available)
 
 (define-pango pango_attr_foreground_new (_pfun _uint16 _uint16 _uint16 -> PangoAttribute)
   #:wrap (allocator pango_attribute_destroy))

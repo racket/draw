@@ -1,5 +1,6 @@
 #lang racket/base
 (require racket/class
+         racket/string
          ffi/unsafe/atomic
          "syntax.rkt"
          "../unsafe/pango.rkt"
@@ -14,36 +15,45 @@
          font-list% the-font-list
          make-font
          family-symbol? style-symbol? smoothing-symbol? hinting-symbol?
-         get-pango-attrs
          get-face-list
          (protect-out substitute-fonts?
                       install-alternate-face
-                      font->pango-attrs
+                      get-pango-attrs
+                      font->pango-attrs ;; redundant with `get-pango-attrs`,
+                                        ;; only exists for backwards compatibility
                       font->hinting
                       install-attributes!))
 
 (define-local-member-name 
   get-pango-attrs
-  s-pango-attrs
   s-hinting)
 
-(define fallback-attrs (and (or xp? (eq? 'macosx (system-type)))
-			    (let ([l (pango_attr_list_new)])
-			      (pango_attr_list_insert l (pango_attr_fallback_new #f))
-			      l)))
-(define underlined-attrs (let ([l (pango_attr_list_new)])
-                           (pango_attr_list_insert l (pango_attr_underline_new
-                                                      PANGO_UNDERLINE_SINGLE))
-                           (when (eq? 'macosx (system-type))
-                             (pango_attr_list_insert l (pango_attr_fallback_new #f)))
-                           l))
+;; attrs-key => PangoAttrList
+(define attrs-cache (make-ephemeron-hash))
+(struct attrs-key (underlined? feature-settings) #:transparent)
 
-(define always-attrs (and (eq? 'macosx (system-type)) fallback-attrs))
+(define (make-pango-attrs key #:no-fallback? [no-fallback? (eq? 'macosx (system-type))])
+  (define l (pango_attr_list_new))
+  (when no-fallback?
+    (pango_attr_list_insert l (pango_attr_fallback_new #f)))
+  (when (attrs-key-underlined? key)
+    (pango_attr_list_insert l (pango_attr_underline_new
+                               PANGO_UNDERLINE_SINGLE)))
+  (unless (hash-empty? (attrs-key-feature-settings key))
+    (define css-features
+      (for/list ([(tag val) (in-immutable-hash (attrs-key-feature-settings key))])
+        (format "\"~a\" ~a" tag val)))
+    (pango_attr_list_insert l (pango_attr_font_features_new
+                               (string-join css-features ","))))
+  l)
+
+(define default-attrs-key (attrs-key #f (hash)))
+(define default-attrs (make-pango-attrs default-attrs-key))
+(hash-set! attrs-cache default-attrs-key default-attrs)
+(define xp-no-fallback-attrs (and xp? (make-pango-attrs default-attrs-key #:no-fallback? #t)))
 
 (define (install-attributes! layout attrs)
-  (cond
-   [attrs (pango_layout_set_attributes layout attrs)]
-   [always-attrs (pango_layout_set_attributes layout always-attrs)]))
+  (pango_layout_set_attributes layout (or attrs default-attrs)))
 
 (define-local-member-name s-set-table-key)
 
@@ -103,7 +113,7 @@
     (pango_layout_set_font_description layout desc)
     (pango_layout_set_text layout (string c))
     (when no-subs?
-      (pango_layout_set_attributes layout fallback-attrs))
+      (pango_layout_set_attributes layout xp-no-fallback-attrs))
     (pango_cairo_update_layout cr layout)
     (begin0
      (or (zero? (pango_layout_get_unknown_glyphs_count layout))
@@ -196,9 +206,19 @@
           (atomically (hash-set! font-descs key (make-ephemeron key desc)))
           desc)))
 
-  (field [s-pango-attrs #f])
+  (define pango-attrs #f)
   (define/public (get-pango-attrs)
-    s-pango-attrs)
+    (cond
+      [pango-attrs => values]
+      [(atomically (hash-ref-key attrs-cache pango-attrs-key #f))
+       => (lambda (cache-key)
+            (set! pango-attrs-key cache-key)
+            (set! pango-attrs (atomically (hash-ref attrs-cache cache-key)))
+            pango-attrs)]
+      [else
+       (set! pango-attrs (make-pango-attrs pango-attrs-key))
+       (atomically (hash-set! attrs-cache pango-attrs-key pango-attrs))
+       pango-attrs]))
 
   (define face #f)
   (def/public (get-face) face)
@@ -223,7 +243,11 @@
   (define style 'normal)
   (def/public (get-style) style)
 
-  (def/public (get-underlined) (and s-pango-attrs #t))
+  (define underlined? #f)
+  (def/public (get-underlined) underlined?)
+
+  (define feature-settings (hash))
+  (def/public (get-feature-settings) feature-settings)
 
   (define weight 'normal)
   (def/public (get-weight) weight)
@@ -246,15 +270,17 @@
      [any? [_underlined? #f]]
      [smoothing-symbol? [_smoothing 'default]]
      [any? [_size-in-pixels? #f]]
-     [hinting-symbol? [_hinting 'aligned]])
+     [hinting-symbol? [_hinting 'aligned]]
+     [font-feature-settings/c [_feature-settings (hash)]])
     (set! size (exact->inexact _size))
     (set! family _family)
     (set! style _style)
     (set! weight _weight)
-    (set! s-pango-attrs (and _underlined? underlined-attrs))
+    (set! underlined? (and _underlined? #t))
     (set! smoothing _smoothing)
     (set! size-in-pixels? _size-in-pixels?)
-    (set! s-hinting _hinting)]
+    (set! s-hinting _hinting)
+    (set! feature-settings _feature-settings)]
    [([(real-in 0.0 1024.0) _size]
      [(make-or-false string?) _face]
      [family-symbol? _family]
@@ -263,16 +289,18 @@
      [any? [_underlined? #f]]
      [smoothing-symbol? [_smoothing 'default]]
      [any? [_size-in-pixels? #f]]
-     [hinting-symbol? [_hinting 'aligned]])
+     [hinting-symbol? [_hinting 'aligned]]
+     [font-feature-settings/c [_feature-settings (hash)]])
     (set! size (exact->inexact _size))
     (set! face (and _face (string->immutable-string _face)))
     (set! family _family)
     (set! style _style)
     (set! weight _weight)
-    (set! s-pango-attrs (and _underlined? underlined-attrs))
+    (set! underlined? (and _underlined? #t))
     (set! smoothing _smoothing)
     (set! size-in-pixels? _size-in-pixels?)
-    (set! s-hinting _hinting)]
+    (set! s-hinting _hinting)
+    (set! feature-settings _feature-settings)]
    (init-name 'font%))
 
   (define id 
@@ -280,15 +308,16 @@
         (send the-font-name-directory find-or-create-font-id face family)
         (send the-font-name-directory find-family-default-font-id family)))
   (define key
-    (let ([key (vector id size style weight (and s-pango-attrs #t) smoothing size-in-pixels? s-hinting)])
+    (let ([key (vector id size style weight underlined? smoothing size-in-pixels? s-hinting)])
       (let ([old-key (atomically (hash-ref keys key #f))])
         (if old-key
             (weak-box-value old-key)
             (begin
               (atomically (hash-set! keys key (make-weak-box key)))
-              key))))))
+              key)))))
+  (define pango-attrs-key (attrs-key underlined? feature-settings)))
 
-(define font->pango-attrs (class-field-accessor font% s-pango-attrs))
+(define (font->pango-attrs v) (send v get-pango-attrs))
 (define font->hinting (class-field-accessor font% s-hinting))
 
 ;; ----------------------------------------
@@ -307,8 +336,10 @@
               [any? [underlined? #f]]
               [smoothing-symbol? [smoothing 'default]]
               [any? [size-in-pixels? #f]]
-              [hinting-symbol? [hinting 'aligned]])
-             (vector (exact->inexact size) family style weight underlined? smoothing size-in-pixels? hinting)]
+              [hinting-symbol? [hinting 'aligned]]
+              [font-feature-settings/c [feature-settings (hash)]])
+             (vector (exact->inexact size) family style weight underlined? smoothing
+                     size-in-pixels? hinting feature-settings)]
             [([(real-in 0.0 1024.0) size]
               [(make-or-false string?) face]
               [family-symbol? family]
@@ -317,9 +348,10 @@
               [any? [underlined? #f]]
               [smoothing-symbol? [smoothing 'default]]
               [any? [size-in-pixels? #f]]
-              [hinting-symbol? [hinting 'aligned]])
+              [hinting-symbol? [hinting 'aligned]]
+              [font-feature-settings/c [feature-settings (hash)]])
              (vector (exact->inexact size) (and face (string->immutable-string face)) family
-                     style weight underlined? smoothing size-in-pixels? hinting)]
+                     style weight underlined? smoothing size-in-pixels? hinting feature-settings)]
             (method-name 'find-or-create-font 'font-list%))])
       (atomically
        (let ([e (hash-ref fonts key #f)])
@@ -379,7 +411,8 @@
                    #:underlined? [underlined? #f]
                    #:smoothing [smoothing 'default]
                    #:size-in-pixels? [size-in-pixels? #f]
-                   #:hinting [hinting 'aligned])
+                   #:hinting [hinting 'aligned]
+                   #:feature-settings [feature-settings (hash)])
   (unless (and (real? size) (<= 0.0 size 1024.0)) (raise-type-error 'make-font "real number in [0.0, 1024.0]" size))
   (unless (or (not face) (string? face)) (raise-type-error 'make-font "string or #f" face))
   (unless (family-symbol? family) (raise-type-error 'make-font "family-symbol" family))
@@ -387,4 +420,4 @@
   (unless (font-weight/c weight) (raise-argument-error 'make-font "font-weight/c" weight))
   (unless (smoothing-symbol? smoothing) (raise-type-error 'make-font "smoothing-symbol" smoothing))
   (unless (hinting-symbol? hinting) (raise-type-error 'make-font "hinting-symbol" hinting))
-  (make-object font% size face family style weight underlined? smoothing size-in-pixels? hinting))
+  (make-object font% size face family style weight underlined? smoothing size-in-pixels? hinting feature-settings))

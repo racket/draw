@@ -50,6 +50,20 @@ and functions.
   @racketblock[(or/c 'aligned 'unaligned)]
 }
 
+@defthing[font-feature-settings/c flat-contract?]{
+  Recognizes font @tech{OpenType feature settings}. Corresponds to the
+  @racket[_feature-settings] initialization argument of the @racket[font%]
+  class.
+
+  Equivalent to the following definition:
+  @racketblock[(and/c hash-equal?
+                      hash-strong?
+                      (hash/c (and/c string? #px"^[ !#-~]{4}$")
+                              exact-nonnegative-integer?
+                              #:immutable #t))]
+  @history[#:added "1.19"]
+}
+
 @defthing[pen-style/c flat-contract?]{
   Recognizes pen styles. Corresponds
   to the @racket[_style] initialization argument of the

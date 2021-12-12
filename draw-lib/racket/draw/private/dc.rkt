@@ -1485,7 +1485,7 @@
           (cairo_translate cr x y)
           (cairo_rotate cr (- angle)))
         (let ([desc (get-pango font)]
-              [attrs (font->pango-attrs font)]
+              [attrs (send font get-pango-attrs)]
               [force-hinting (case (font->hinting font)
                                [(aligned) round]
                                [else values])]
@@ -2128,7 +2128,6 @@
 
     (define/private (get-font-metric cr sel s-sel)
       (let* ([desc (get-pango font)]
-	     [attrs (send font get-pango-attrs)]
 	     [index (get-smoothing-index font)]
 	     [context (get-context cr index font current-xform)]
 	     [fontmap (get-font-map index current-xform)]
