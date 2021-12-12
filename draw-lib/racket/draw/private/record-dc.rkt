@@ -339,7 +339,8 @@
         (send f get-underlined)
         (send f get-smoothing)
         (send f get-size-in-pixels)
-        (send f get-hinting)))
+        (send f get-hinting)
+        (send f get-feature-settings)))
 
 (define (unconvert-font l)
   (apply make-object font% l))

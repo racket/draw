@@ -23,7 +23,8 @@ Creates an empty font list.
                                    [underline? any/c #f]
                                    [smoothing (or/c 'default 'partly-smoothed 'smoothed 'unsmoothed) 'default]
                                    [size-in-pixels? any/c #f]
-                                   [hinting (or/c 'aligned 'unaligned) 'aligned])
+                                   [hinting (or/c 'aligned 'unaligned) 'aligned]
+                                   [feature-settings font-feature-settings/c (hash)])
               (is-a?/c font%)]
              [(find-or-create-font [size (real-in 0.0 1024.0)]
                                    [face string?]
@@ -34,11 +35,13 @@ Creates an empty font list.
                                    [underline any/c #f]
                                    [smoothing (or/c 'default 'partly-smoothed 'smoothed 'unsmoothed) 'default]
                                    [size-in-pixels? any/c #f]
-                                   [hinting (or/c 'aligned 'unaligned) 'aligned])
+                                   [hinting (or/c 'aligned 'unaligned) 'aligned]
+                                   [feature-settings font-feature-settings/c (hash)])
               (is-a?/c font%)])]{
 
 Finds an existing font in the list or creates a new one (that is
  automatically added to the list). The arguments are the same as for
  creating a @racket[font%] instance.
 
-@history[#:changed "1.4" @elem{Changed @racket[size] to allow non-integer and zero values.}]}}
+@history[#:changed "1.4" @elem{Changed @racket[size] to allow non-integer and zero values.}
+         #:changed "1.19" @elem{Added the optional @racket[feature-settings] argument.}]}}

@@ -18,7 +18,7 @@
 
 (define pkg-authors '(mflatt))
 
-(define version "1.18")
+(define version "1.19")
 
 (define license
   '(Apache-2.0 OR MIT))

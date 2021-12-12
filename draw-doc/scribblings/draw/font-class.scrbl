@@ -5,7 +5,7 @@
 
 A @defterm{font} is an object which determines the appearance of text,
  primarily when drawing text to a device context. A font is determined
- by seven properties:
+ by eight properties:
 
 @itemize[
 
@@ -104,6 +104,17 @@ A @defterm{font} is an object which determines the appearance of text,
    @item{@indexed-racket['unaligned] --- disables rounding}
  ]}
 
+@item{@deftech[#:key "OpenType feature settings"]{feature settings} ---
+        A hash of @hyperlink["https://practicaltypography.com/opentype-features.html"]{
+        OpenType feature} settings to enable or disable optional typographic
+        features of OpenType fonts. Each entry in the hash maps a four-letter
+        OpenType feature tag to its desired value. For boolean OpenType features,
+        a value of @racket[0] means “disabled” and a value of @racket[1] means
+        “enabled”; for other features, the meaning of the value varies (and may
+        even depend on the font itself).
+
+        @history[#:added "1.19"]}
+
 ]
 
 To avoid creating multiple fonts with the same characteristics, use
@@ -117,7 +128,8 @@ See also
          #:changed "1.14" @elem{Changed ``weight'' to allow integer values and the symbols
                                 @racket['thin], @racket['ultralight], @racket['semilight],
                                 @racket['book], @racket['medium], @racket['semibold],
-                                @racket['ultrabold], @racket['heavy], and @racket['ultraheavy].}]
+                                @racket['ultrabold], @racket['heavy], and @racket['ultraheavy].}
+         #:changed "1.19" @elem{Added the ``feature settings'' property to control OpenType features.}]
 
 
 @defconstructor*/make[(()
@@ -128,7 +140,8 @@ See also
                         [underline? any/c #f]
                         [smoothing font-smoothing/c 'default]
                         [size-in-pixels? any/c #f]
-                        [hinting font-hinting/c 'aligned])
+                        [hinting font-hinting/c 'aligned]
+                        [feature-settings font-feature-settings/c (hash)])
                        ([size (real-in 0.0 1024.0)]
                         [face string?]
                         [family font-family/c]
@@ -137,7 +150,8 @@ See also
                         [underline? any/c #f]
                         [smoothing font-smoothing/c 'default]
                         [size-in-pixels? any/c #f]
-                        [hinting font-hinting/c 'aligned]))]{
+                        [hinting font-hinting/c 'aligned]
+                        [feature-settings font-feature-settings/c (hash)]))]{
 
 When no arguments are provided, creates an instance of the default
  font. If no face name is provided, the font is created without a face
@@ -145,7 +159,7 @@ When no arguments are provided, creates an instance of the default
 
 See @racket[font%] for information about @racket[family],
  @racket[style], @racket[weight], @racket[smoothing],
- @racket[size-in-pixels?], and @racket[hinting].
+ @racket[size-in-pixels?], @racket[hinting], and @racket[feature-settings].
  @racket[font-name-directory<%>].
 
 See also @racket[make-font].
@@ -154,7 +168,8 @@ See also @racket[make-font].
          #:changed "1.14" @elem{Changed @racket[weight] to allow integer values and the symbols
                                 @racket['thin], @racket['ultralight], @racket['semilight],
                                 @racket['book], @racket['medium], @racket['semibold],
-                                @racket['ultrabold], @racket['heavy], and @racket['ultraheavy].}]}
+                                @racket['ultrabold], @racket['heavy], and @racket['ultraheavy].}
+         #:changed "1.19" @elem{Added the optional @racket[feature-settings] argument.}]}
 
 
 @defmethod[(get-face)
@@ -168,6 +183,12 @@ Gets the font's face name, or @racket[#f] if none is specified.
 
 Gets the font's family. See @racket[font%] for information about
 families.
+
+}
+
+@defmethod[(get-feature-settings) font-feature-settings/c]{
+
+Gets the font's @tech{OpenType feature settings}.
 
 }
 

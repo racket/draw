@@ -73,7 +73,8 @@
          font-weight/c
          font-style/c
          font-smoothing/c
-         font-hinting/c)
+         font-hinting/c
+         font-feature-settings/c)
 
 (provide/contract [color%            color%/c]
                   [point%            point%/c]
