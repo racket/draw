@@ -27,6 +27,7 @@
          font-list% the-font-list make-font
          font-name-directory<%> the-font-name-directory
 	 (contract-out
+          [current-font-list (parameter/c (or/c (is-a?/c font-list%) #f))]
           [the-pen-list (instanceof/c pen-list%/c)]
           [the-brush-list (instanceof/c brush-list%/c)])
          dc<%>

@@ -12,7 +12,7 @@
          "lock.rkt")
 
 (provide font%
-         font-list% the-font-list
+         font-list% the-font-list current-font-list
          make-font
          family-symbol? style-symbol? smoothing-symbol? hinting-symbol?
          get-face-list
@@ -403,6 +403,8 @@
               family-name])))))
    string<?))
 
+(define current-font-list (make-parameter #f))
+
 (define (make-font #:size [size 12.0]
                    #:face [face #f]
                    #:family [family 'default]
@@ -412,7 +414,8 @@
                    #:smoothing [smoothing 'default]
                    #:size-in-pixels? [size-in-pixels? #f]
                    #:hinting [hinting 'aligned]
-                   #:feature-settings [feature-settings (hash)])
+                   #:feature-settings [feature-settings (hash)]
+                   #:font-list [font-list (current-font-list)])
   (unless (and (real? size) (<= 0.0 size 1024.0)) (raise-type-error 'make-font "real number in [0.0, 1024.0]" size))
   (unless (or (not face) (string? face)) (raise-type-error 'make-font "string or #f" face))
   (unless (family-symbol? family) (raise-type-error 'make-font "family-symbol" family))
@@ -420,4 +423,8 @@
   (unless (font-weight/c weight) (raise-argument-error 'make-font "font-weight/c" weight))
   (unless (smoothing-symbol? smoothing) (raise-type-error 'make-font "smoothing-symbol" smoothing))
   (unless (hinting-symbol? hinting) (raise-type-error 'make-font "hinting-symbol" hinting))
-  (make-object font% size face family style weight underlined? smoothing size-in-pixels? hinting feature-settings))
+  (unless (or (not font-list) (is-a? font-list font-list%))
+    (raise-argument-error 'make-font "(or/c (is-a?/c font-list%) #f)" font-list))
+  (if font-list
+      (send font-list find-or-create-font size face family style weight underlined? smoothing size-in-pixels? hinting feature-settings)
+      (make-object font% size face family style weight underlined? smoothing size-in-pixels? hinting feature-settings)))

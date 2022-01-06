@@ -115,19 +115,37 @@ or @racket[the-color-database].}
                                  'default]
                     [#:size-in-pixels? size-in-pixels? any/c #f]
                     [#:hinting hinting (or/c 'aligned 'unaligned) 'aligned]
-                    [#:feature-settings feature-settings font-feature-settings/c (hash)])
+                    [#:feature-settings feature-settings font-feature-settings/c (hash)]
+                    [#:font-list font-list (or/c (is-a?/c font-list%) #f) (current-font-list)])
          (is-a?/c font%)]{
 
-Creates a @racket[font%] instance. This procedure provides an
-equivalent but more convenient interface compared to using
-@racket[make-object] with @racket[font%].
+Finds or creates a @racket[font%] instance.
+
+When @racket[font-list] is @racket[#f], @racket[make-font] creates a
+new font using @racket[make-object] with @racket[font%]. Otherwise,
+when @racket[font-list] is a @racket[font-list%] instance,
+@racket[make-font] finds or creates a font using its
+@method[font-list% find-or-create-font] method. In both cases,
+@racket[make-font] merely provides a more convenient interface.
 
 @history[#:changed "1.4" @elem{Changed @racket[size] to allow non-integer and zero values.}
          #:changed "1.14" @elem{Changed @racket[weight] to allow integer values and the symbols
                                 @racket['thin], @racket['ultralight], @racket['semilight],
                                 @racket['book], @racket['medium], @racket['semibold],
                                 @racket['ultrabold], @racket['heavy], and @racket['ultraheavy].}
-         #:changed "1.19" @elem{Added the optional @racket[feature-settings] argument.}]}
+         #:changed "1.19" @elem{Added the optional @racket[feature-settings] and
+                                @racket[font-list] arguments.}]}
+
+
+@defparam[current-font-list font-list (or/c (is-a?/c font-list%) #f)
+          #:value #f]{
+
+A parameter that determines the default value for the
+@racket[#:font-list] argument to @racket[make-font]. Defaults to
+@racket[#f], but see @racket[the-font-list] for a possible
+alternative value.
+                      
+@history[#:added "1.19"]}
 
 
 @defproc[(make-monochrome-bitmap [width exact-positive-integer?]
