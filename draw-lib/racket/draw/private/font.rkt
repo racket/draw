@@ -200,8 +200,7 @@
                                                       [(heavy) PANGO_WEIGHT_HEAVY]
                                                       [(ultraheavy) PANGO_WEIGHT_ULTRAHEAVY]
                                                       [else weight])))
-          (let ([size (if size-in-pixels? size (* dpi-scale size))])
-            (pango_font_description_set_absolute_size desc (* size PANGO_SCALE)))
+          (pango_font_description_set_absolute_size desc (* size-in-pixels PANGO_SCALE))
           (install! desc)
           (atomically (hash-set! font-descs key (make-ephemeron key desc)))
           desc)))
@@ -227,9 +226,12 @@
   (def/public (get-family) family)
 
   (define size 12.0)
+  (define size-in-points size)
+  (define size-in-pixels (* size-in-points dpi-scale))
   (def/public (get-point-size) (max 1 (inexact->exact (round size))))
   
-  (def/public (get-size) size)
+  (define/public (get-size [in-pixels? size-in-pixels?])
+    (if in-pixels? size-in-pixels size-in-points))
 
   (define size-in-pixels? #f)
   (def/public (get-size-in-pixels) size-in-pixels?)
@@ -278,7 +280,7 @@
     (set! weight _weight)
     (set! underlined? (and _underlined? #t))
     (set! smoothing _smoothing)
-    (set! size-in-pixels? _size-in-pixels?)
+    (set! size-in-pixels? (and _size-in-pixels? #t))
     (set! s-hinting _hinting)
     (set! feature-settings _feature-settings)]
    [([(real-in 0.0 1024.0) _size]
@@ -298,10 +300,18 @@
     (set! weight _weight)
     (set! underlined? (and _underlined? #t))
     (set! smoothing _smoothing)
-    (set! size-in-pixels? _size-in-pixels?)
+    (set! size-in-pixels? (and _size-in-pixels? #t))
     (set! s-hinting _hinting)
     (set! feature-settings _feature-settings)]
    (init-name 'font%))
+
+  (cond
+    [size-in-pixels?
+     (set! size-in-pixels size)
+     (set! size-in-points (/ size dpi-scale))]
+    [else
+     (set! size-in-pixels (* size dpi-scale))
+     (set! size-in-points size)])
 
   (define id 
     (if face

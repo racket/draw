@@ -93,8 +93,8 @@ A @defterm{font} is an object which determines the appearance of text,
 @item{size-in-pixels? --- @racket[#t] if the size of the font
  is in logical drawing units (i.e., pixels for an unscaled screen or
  bitmap drawing context), @racket[#f] if the size of the font is in
- ``points'', where a ``point'' is equal to 1 pixel on Mac OS and
- @racket[(/ 96 72)] pixels on Windows and Unix}
+ @deftech[#:key "font point"]{points}, where a point is equal to 1
+ pixel on Mac OS and @racket[(/ 96 72)] pixels on Windows and Unix}
 
 @item{hinting --- Whether font metrics should be rounded to integers:
  @itemize[
@@ -212,35 +212,34 @@ hinting.
            (integer-in 1 1024)]{
 
 Gets the font's size rounded to the nearest non-zero integer. Despite
- the method's name, the result is in either logical units or points,
- depending on the result of @method[font% get-size-in-pixels].
+ the method's name, the result is in either logical units or
+ @tech[#:key "font point"]{points}, depending on the result of
+ @method[font% get-size-in-pixels].
 
 See @method[font% get-size], instead. The @method[font% get-point-size]
  method is provided for backward compatibility.}
 
 
-@defmethod[(get-size)
+@defmethod[(get-size [in-pixels? any/c (send @#,this-obj[] @#,method[font% get-size-in-pixels])])
            (real-in 0.0 1024.0)]{
 
-Gets the font's size (roughly the height). The size is in either
- logical units or points, depending on the result of @method[font%
- get-size-in-pixels].
+Gets the font's size (roughly the height). If @racket[in-pixels?] is
+ @racket[#f], the size is in @tech[#:key "font point"]{points},
+ otherwise it is in logical units.
 
 Due to space included in a font by a font designer, a font tends to
  generate text that is slightly taller than the nominal size.
 
-@history[#:added "1.4"]}
+@history[#:added "1.4"
+         #:changed "1.19" @elem{Added the @racket[in-pixels?] argument.}]}
 
 
 @defmethod[(get-size-in-pixels)
            boolean?]{
 
-Returns @racket[#t] if the size reported by @method[font%
- get-point-size] is in logical drawing units, @racket[#f] if it is in
- points.
-
-For a size in points and a screen or bitmap drawing context, the
- logical height depends on the resolution of the screen.
+Returns @racket[#t] if @method[font% get-size] defaults to reporting
+ the size in logical drawing units, @racket[#f] if it defaults to
+ reporting @tech[#:key "font point"]{points}.
 
 }
 
