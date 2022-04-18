@@ -10,6 +10,7 @@
     ("draw-aarch64-macosx-3" #:platform "aarch64-macosx")
     ("draw-win32-i386-3" #:platform "win32\\i386")
     ("draw-win32-x86_64-3" #:platform "win32\\x86_64")
+    ("draw-win32-arm64-3" #:platform "win32\\arm64")
     ("draw-x86_64-linux-natipkg-3" #:platform "x86_64-linux-natipkg")
     ("draw-x11-x86_64-linux-natipkg" #:platform "x86_64-linux-natipkg")
     ("draw-ttf-x86_64-linux-natipkg" #:platform "x86_64-linux-natipkg")))
