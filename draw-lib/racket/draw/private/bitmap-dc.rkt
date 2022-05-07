@@ -186,6 +186,14 @@
            (when (eq? s 'unsmoothed) (set-smoothing 'unsmoothed))
            (set-transformation t)))))
 
+    (define/override (get-text-extent s
+                                      [use-font (get-font)]
+                                      [combine? #f]
+                                      [offset 0])
+      (if (internal-get-bitmap)
+          (super get-text-extent s use-font combine? offset)
+          (send (get-temp-bitmap-dc) get-text-extent s use-font combine? offset)))
+
     (def/override (get-char-width)
       (if (internal-get-bitmap)
           (super get-char-width)
