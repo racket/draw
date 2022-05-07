@@ -965,5 +965,17 @@
 (test #f 'undef-bitmap-dc (impersonator? (new bitmap-dc%)))
 
 ;; ----------------------------------------
+;; No error when bitmap is uninstalled
+
+(let ()
+  (define dc (new bitmap-dc%))
+  (define cw (send dc get-char-width))
+  (define ch (send dc get-char-height))
+  (define-values (w h d a) (send dc get-text-extent "foo"))
+  (test #t
+        'uninstalled-bitmap
+        (andmap real? (list cw ch w h d a))))
+
+;; ----------------------------------------
 
 (report-errs)
