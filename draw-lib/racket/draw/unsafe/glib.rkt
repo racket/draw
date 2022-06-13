@@ -28,13 +28,19 @@
    (ffi-lib "libgthread-2.0-0.dll")
    (ffi-lib "libgmodule-2.0-0.dll")])
 
+(define-runtime-lib libffi-lib
+  ;; needed by libgobject
+  [(unix) (ffi-lib "libffi" '("6" ""))]
+  [(macosx)
+   (ffi-lib "libffi.6.dylib")]
+  [(windows)
+   (ffi-lib "libffi-6.dll")])
+
 (define-runtime-lib gobj-lib
   [(unix) (ffi-lib "libgobject-2.0" '("0" ""))]
   [(macosx)
-   (ffi-lib "libffi.6.dylib")
    (ffi-lib "libgobject-2.0.0.dylib")]
-  [(windows) 
-   (ffi-lib "libffi-6.dll")
+  [(windows)
    (ffi-lib "libgobject-2.0-0.dll")])
 
 (define-ffi-definer define-glib glib-lib)
