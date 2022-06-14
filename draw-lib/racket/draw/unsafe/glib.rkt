@@ -30,7 +30,10 @@
 
 (define-runtime-lib libffi-lib
   ;; needed by libgobject
-  [(unix) (ffi-lib "libffi" '("6" ""))]
+  [(unix)
+   ;; If an expected version is not available, then assume it's not
+   ;; natipkg, and shared-library search when libgobject is loaded
+   (ffi-lib "libffi" '("6" "7" "8" "") #:fail (lambda () #f))]
   [(macosx)
    (ffi-lib "libffi.6.dylib")]
   [(windows)
