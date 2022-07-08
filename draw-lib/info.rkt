@@ -3,7 +3,7 @@
 (define collection 'multi)
 
 (define deps
-  '(("base" #:version "8.0.0.8")
+  '(("base" #:version "8.6.0.2")
     ("draw-i386-macosx-3" #:platform "i386-macosx")
     ("draw-x86_64-macosx-3" #:platform "x86_64-macosx")
     ("draw-ppc-macosx-3" #:platform "ppc-macosx")
@@ -19,7 +19,7 @@
 
 (define pkg-authors '(mflatt))
 
-(define version "1.19")
+(define version "1.20")
 
 (define license
   '(Apache-2.0 OR MIT))

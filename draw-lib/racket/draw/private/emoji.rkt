@@ -31,11 +31,11 @@
     [else #f]))
 
 ;; Returns #f or (cons start end) for the first emoji sequence in `s`
-(define (find-emoji-sequence s)
+(define (find-emoji-sequence s start)
   (cond
     [emoji-sequences
      (define len (string-length s))
-     (let loop ([i 0])
+     (let loop ([i start])
        (cond
          [(= i len) #f]
          [else

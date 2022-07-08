@@ -254,7 +254,7 @@
 	    (define no-bitmaps? #f)
 	    (define no-stipples? #f)
 	    (define pixel-copy? #f)
-	    (define kern? #f)
+	    (define combine #f)
 	    (define clip-pre-scale? #f)
             (define c-clip #f)
 	    (define mask-ex-mode 'mred)
@@ -270,7 +270,7 @@
 	     [set-bitmaps (lambda (on?) (set! no-bitmaps? (not on?)) (refresh))]
 	     [set-stipples (lambda (on?) (set! no-stipples? (not on?)) (refresh))]
 	     [set-pixel-copy (lambda (on?) (set! pixel-copy? on?) (refresh))]
-	     [set-kern (lambda (on?) (set! kern? on?) (refresh))]
+	     [set-combine (lambda (mode) (set! combine mode) (refresh))]
 	     [set-clip-pre-scale (lambda (on?) (set! clip-pre-scale? on?) (refresh))]
 	     [set-canvas-clip (lambda (mode) (set! c-clip mode) (refresh))]
 	     [set-mask-ex-mode (lambda (mode) (set! mask-ex-mode mode) (refresh))]
@@ -665,9 +665,9 @@
 				    (let ([fnt (make-object font% (car sze) (car fam) (car stl) (car wgt))]
 					  [s "AvgflfiMh"])
 				      (send dc set-font fnt)
-				      (send dc draw-text s x y kern?)
+				      (send dc draw-text s x y combine)
 				      (send dc set-font save-fnt)
-				      (let-values ([(w h d a) (send dc get-text-extent s fnt kern?)])
+				      (let-values ([(w h d a) (send dc get-text-extent s fnt combine)])
 					(send dc draw-rectangle x y w h)
 					(send dc draw-line x (+ y (- h d)) (+ x w) (+ y (- h d)))
 					(when chinese?
@@ -678,20 +678,20 @@
 							  (make-object font% 12 "MOESung-Regular" 'default)
 							  fnt)])
 					    (send dc set-font cfnt)
-					    (send dc draw-text s x y kern?)
+					    (send dc draw-text s x y combine)
 					    (send dc set-font fnt)
-					    (let-values ([(w h d a) (send dc get-text-extent s cfnt kern?)])
+					    (let-values ([(w h d a) (send dc get-text-extent s cfnt combine)])
 					      (send dc draw-rectangle x y w h)
 					      (send dc draw-line x (+ y (- h d)) (+ x w) (+ y (- h d)))
                                               ;; Rotated Chinese character:
-                                              (send dc draw-text s (+ x h (- d)) (+ y h 2) kern? 0 (* pi -1/2))
+                                              (send dc draw-text s (+ x h (- d)) (+ y h 2) combine 0 (* pi -1/2))
 					      ;; Mathematical "A" (beyond UCS-2)
 					      (let ([s "\U1D670"]
 						    [x (+ x (* 1.5 w))])
 						(send dc set-font fnt)
-						(send dc draw-text s x y kern?)
+						(send dc draw-text s x y combine)
 						(send dc set-font fnt)
-						(let-values ([(w h d a) (send dc get-text-extent s cfnt kern?)])
+						(let-values ([(w h d a) (send dc get-text-extent s cfnt combine)])
 						  (send dc draw-rectangle x y w h)
 						  (send dc draw-line x (+ y (- h d)) (+ x w) (+ y (- h d))))))))
 					(loop (cdr fam) (cdr stl) (cdr wgt) (cdr sze) x (+ y h) #f)))))
@@ -704,7 +704,7 @@
                                                   ;; rocket
                                                   #\U1F680
                                                   #\")
-                                    320 115 kern?)
+                                    320 115 combine)
                               (send dc draw-text (string
                                                   #\"
                                                   ;; girl with modifier
@@ -712,13 +712,13 @@
                                                   ;; 1 with modifier
                                                   #\1 #\Ufe0f #\U20e3
                                                   #\")
-                                    320 135 kern?)
+                                    320 135 combine)
                               (let ([f (send dc get-font)])
                                 (send dc set-font (make-font #:size (floor (* 3/2 (send f get-point-size)))))
                                 (send dc draw-text (string
                                                     ;; rocket
                                                     #\U1F680)
-                                      240 185 kern?)
+                                      240 185 combine)
                                 (send dc set-font f)))
 
                             ;; Text paths:
@@ -1383,9 +1383,14 @@
                                           red-mred^mred~ opaque-red-mred^mred~
 					  plt^plt)
 				   (send self get-selection)))))
-    (make-object check-box% "Kern" hp
+    (make-object choice% #f
+                 '("Characters" "Graphemes" "Combine")
+                 hp
 		 (lambda (self event)
-		   (send canvas set-kern (send self get-value))))
+		   (send canvas set-combine (case (send self get-selection)
+                                              [(0) #f]
+                                              [(1) 'grapheme]
+                                              [else #t]))))
     (make-object check-box% "Cyan" hp
 		 (lambda (self event)
 		   (set! cyan? (send self get-value))

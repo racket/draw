@@ -405,7 +405,7 @@ See also @method[dc<%> set-smoothing] for information on the
 @defmethod[(draw-text [text string?]
                       [x real?]
                       [y real?]
-                      [combine? any/c #f]
+                      [combine-mode any/c #f]
                       [offset exact-nonnegative-integer? 0]
                       [angle real? 0])
            void?]{
@@ -421,12 +421,17 @@ The @racket[text] string is drawn starting from the @racket[offset]
  character, and continuing until the end of @racket[text] or the first
  null character.
 
-If @racket[combine?] is @racket[#t], then @racket[text] may be
- measured with adjacent characters combined to ligature glyphs, with
- Unicode combining characters as a single glyph, with kerning, with
- right-to-left rendering of characters, etc. If @racket[combine?] is
- @racket[#f], then the result is the same as if each character is
- measured separately, and Unicode control characters are ignored.
+If @racket[combine-mode] is @racket[#f], then the result is the same
+ as if each character is drawn separately, and Unicode control
+ characters are ignored. If @racket[combine-mode] is
+ @racket['grapheme], then the result is the same as if each Unicode
+ grapheme cluster is drawn separately, but multiple characters of
+ @racket[text] that form a grapheme cluster may be drawn as a single
+ glyph. Otherwise, for @racket[combine-mode] as any true value except
+ @racket['grapheme], @racket[text] may be drawn with adjacent
+ characters combined to form ligature glyphs, with Unicode combining
+ characters as a single glyph, with kerning, with right-to-left
+ rendering of characters, etc.
 
 The string is rotated by @racket[angle] radians counter-clockwise. If
  @racket[angle] is not zero, then the text is always drawn in
@@ -443,7 +448,8 @@ See also @method[dc<%> set-text-foreground], @method[dc<%>
 
 @|DrawSizeNote|
 
-}
+@history[#:changed "1.20" @elem{Changed to treat @racket[combine-mode] as @racket['graheme]
+                                different than other true values.}]}
 
 @defmethod[(end-doc)
            void?]{
@@ -715,7 +721,7 @@ set-text-background].
 
 @defmethod[(get-text-extent [string string?]
                             [font (or/c (is-a?/c font%) #f) #f]
-                            [combine? any/c #f]
+                            [combine-mode any/c #f]
                             [offset exact-nonnegative-integer? 0])
            (values (and/c real? (not/c negative?)) 
                    (and/c real? (not/c negative?))
@@ -754,12 +760,17 @@ The returned width and height define a rectangle is that guaranteed to
  depending on the whims of the font designer and the platform-specific
  font-scaling mechanism.
 
-If @racket[combine?] is @racket[#t], then @racket[text] may be drawn
- with adjacent characters combined to ligature glyphs, with Unicode
+If @racket[combine-mode] is @racket[#f], then the result is the same
+ as if each character is measured separately, and Unicode control
+ characters are ignored. If @racket[combine-mode] is
+ @racket['grapheme], then the result is the same as if each Unicode
+ grapheme cluster is measured separately, but multiple characters of
+ @racket[text] that form a grapheme cluster may be measured as a
+ single glyph. Otherwise, for @racket[combine-mode] as any true value
+ except @racket['grapheme], @racket[text] may be measured with
+ adjacent characters combined to form ligature glyphs, with Unicode
  combining characters as a single glyph, with kerning, with
- right-to-left ordering of characters, etc. If @racket[combine?] is
- @racket[#f], then the result is the same as if each character is
- drawn separately, and Unicode control characters are ignored.
+ right-to-left rendering of characters, etc.
 
 Unlike most methods, this method can be called for a
  @racket[bitmap-dc%] object without a bitmap installed.
@@ -769,7 +780,9 @@ Unlike most methods, this method can be called for a
  #:eval (make-base-eval '(require racket/class racket/draw))
  (define text-size-dc (new bitmap-dc% [bitmap (make-object bitmap% 1 1)]))
  (send text-size-dc get-text-extent "Pickles")]
-}
+
+@history[#:changed "1.20" @elem{Changed to treat @racket[combine-mode] as @racket['graheme]
+                                different than other true values.}]}
 
 
 @defmethod[(get-text-foreground)

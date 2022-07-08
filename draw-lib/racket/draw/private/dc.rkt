@@ -1317,7 +1317,7 @@
        (cairo_restore cr)))
 
     (def/public (draw-text [string? s] [real? x] [real? y]
-                           [any? [combine? #f]]
+                           [any? [combine-mode #f]]
                            [exact-nonnegative-integer? [offset 0]]
                            [real? [angle 0.0]])
       (unless (offset . <= . (string-length s))
@@ -1328,14 +1328,14 @@
       (with-cr
        (check-ok 'draw-text)
        cr
-       (do-text cr 'draw s x y font combine? offset angle)
+       (do-text cr 'draw s x y font combine-mode offset angle)
        (flush-cr)))
 
-    (define/public (text-path s x y combine?)
+    (define/public (text-path s x y combine-mode)
       (with-cr
        (check-ok 'draw-text)
        cr
-       (do-text cr 'path s x y font combine? 0 0.0)
+       (do-text cr 'path s x y font combine-mode 0 0.0)
        (cairo_copy_path cr)))
 
     (define size-cache (make-weak-hasheq))
@@ -1358,13 +1358,17 @@
 
     (def/public (get-text-extent [string? s] 
                                  [(make-or-false font%) [use-font font]]
-                                 [any? [combine? #f]]
+                                 [any? [combine-mode #f]]
                                  [exact-nonnegative-integer? [offset 0]])
       (check-ok 'get-text-extent)
-      (let ([use-font (or use-font font)])
+      (let ([use-font (or use-font font)]
+            [combine-mode (if (and (eq? combine-mode 'grapheme)
+                                   (= (string-length s) (string-grapheme-count s)))
+                              #f
+                              combine-mode)])
         ;; Try to used cached size info, first:
         (let-values ([(w h d a)
-                      (if (or combine?
+                      (if (or combine-mode
                               (not effective-scale-font-cached?))
                           (values #f #f #f #f)
                           (let ([cache (get-size-cache (get-pango use-font))])
@@ -1392,7 +1396,7 @@
               (with-unchanged-cr
                (values 1.0 1.0 0.0 0.0)
                cr
-               (do-text cr #f s 0 0 use-font combine? offset 0.0))))))
+               (do-text cr #f s 0 0 use-font combine-mode offset 0.0))))))
 
     (define/private (get-smoothing-index font)
       (+ (case (dc-adjust-smoothing (send font get-smoothing))
@@ -1454,7 +1458,7 @@
 	  (vector-set! font-maps smoothing-index fm)
 	  fm])]))
 
-    (define/private (do-text cr draw-mode s x y font combine? offset angle)
+    (define/private (do-text cr draw-mode s x y font combine-mode offset angle)
       (let* ([s (if (zero? offset) 
                     s
                     (substring s offset))]
@@ -1473,7 +1477,7 @@
         (when draw-mode
           (when (eq? text-mode 'solid)
             (unless rotate?
-              (let-values ([(w h d a) (do-text cr #f s 0 0 font combine? 0 0.0)])
+              (let-values ([(w h d a) (do-text cr #f s 0 0 font combine-mode 0 0.0)])
                 (install-color cr text-bg alpha #f)
                 (cairo_new_path cr)
                 (cairo_rectangle cr x y w h)
@@ -1490,26 +1494,32 @@
                                [(aligned) round]
                                [else values])]
               [x (if rotate? 0.0 (exact->inexact x))]
-              [y (if rotate? 0.0 (exact->inexact y))])
+              [y (if rotate? 0.0 (exact->inexact y))]
+              [combine-mode (if (and (eq? combine-mode 'grapheme)
+                                     (= (string-length s) (string-grapheme-count s)))
+                                #f
+                                combine-mode)])
           ;; We have two ways to draw text:
-          ;;  - If `combine?' (to enable kerning etc.), then we create a Pango layout
+          ;;  - If `combine-mode' (to enable kerning etc.), then we create a Pango layout
           ;;    and draw it. This is the slow but pretty way (but not used for editors,
           ;;    where the text needs to draw the same if it's drawn all together or
           ;;    in pieces).
-          ;;  - If not `combine?', then we draw character by character.
+          ;;  - If not `combine-mode', then we draw character by character.
           (void)
-          (if combine?
+          (if combine-mode
               ;; This is combine mode. It has to be a little complicated, after all,
-              ;; because we may need to implement font substitution ourselves, which
-              ;; breaks the string into multiple layouts.
-              (let loop ([s s] [draw-mode draw-mode] [measured? #f] [unrotate? rotate?]
+              ;; even when fully combining, because we may need to implement font
+              ;; substitution ourselves, which breaks the string into multiple layouts.
+              ;; Also, we break out grapheme clusters in this loop when
+              ;; `combine-mode` is 'grapheme.
+              (let loop ([s s] [pos 0] [draw-mode draw-mode] [measured? #f] [unrotate? rotate?]
                          [w 0.0] [h 0.0] [d 0.0] [a 0.0] [also-measure? #f])
                 (cond
-                 [(or (not s)
-                      (equal? s "")) ; can happen if last char is substituted
+                  [(or (not s)
+                       (= pos (string-length s)))
                   (when unrotate? (cairo_restore cr))
                   (values w h d a)]
-                 [(find-emoji-sequence s)
+                 [(find-emoji-sequence s pos)
                   => (lambda (start+end)
                        (define start (car start+end))
                        (define end (cdr start+end))
@@ -1517,13 +1527,13 @@
                          [(and draw-mode (not measured?) (or (start . > . 0)
                                                              (end . < . (string-length s))))
                           ;; It's going to take multiple layouts, so first gather measurements.
-                          (let-values ([(w2 h d a) (loop s #f #f #f w h d a #t)])
+                          (let-values ([(w2 h d a) (loop s pos #f #f #f w h d a #t)])
                             ;; draw again, supplying `h', `d', and `a' for the whole line
-                            (loop s draw-mode #t unrotate? w h d a also-measure?))]
+                            (loop s pos draw-mode #t unrotate? w h d a also-measure?))]
                          [else
-                          (let-values ([(w h d a) (if (= start 0)
+                          (let-values ([(w h d a) (if (= start pos)
                                                       (values w h d a)
-                                                      (loop (substring s 0 start) draw-mode measured? #f w h d a #t))])
+                                                      (loop (substring s pos start) 0 draw-mode measured? #f w h d a #t))])
                             (define str (substring s start end))
                             (define-values (nw nh nd na) (emoji-extent font str))
                             (when (eq? draw-mode 'draw)
@@ -1533,15 +1543,31 @@
                                             (text-align-y/delta (fl+ y bl) 0)
                                             font
                                             str)))
-                            (loop (substring s end) draw-mode measured? unrotate?
+                            (loop s end draw-mode measured? unrotate?
                                   (fl+ w nw) (flmax h nh) (flmax d nd) (flmax a na)
+                                  also-measure?))]))]
+                 [(and (eq? combine-mode 'grapheme)
+                       (let ([len (string-grapheme-span s pos)])
+                         (and (len . < . (- (string-length s) pos))
+                              len)))
+                  => (lambda (len)
+                       (cond
+                         [(and draw-mode (not measured?))
+                          ;; It's going to take multiple layouts, so first gather measurements.
+                          (let-values ([(w2 h d a) (loop s pos #f #f #f w h d a #t)])
+                            ;; draw again, supplying `h', `d', and `a' for the whole line
+                            (loop s pos draw-mode #t unrotate? w h d a also-measure?))]
+                         [else
+                          (let-values ([(w h d a) (loop (substring s pos (+ pos len)) 0 draw-mode measured? #f w h d a #t)])
+                            (loop s (+ pos len) draw-mode measured? unrotate?
+                                  w h d a
                                   also-measure?))]))]
                  [else
                   (pango_cairo_update_context cr context)
                   (let ([layout (pango_layout_new context)])
                     (pango_layout_set_font_description layout desc)
                     (install-attributes! layout attrs)
-                    (pango_layout_set_text layout s)
+                    (pango_layout_set_text layout (substring s pos))
                     (let ([next-s
                            (if (or (not substitute-fonts?)
                                    (zero? (pango_layout_get_unknown_glyphs_count layout)))
@@ -1549,7 +1575,7 @@
                                ;; look for the first character in the string without a glyph
                                (let ([ok-count
                                       (let ([len (string-length s)])
-                                        (let loop ([lo 0] [hi (sub1 len)] [i (quotient len 2)])
+                                        (let loop ([lo pos] [hi (sub1 len)] [i (+ pos (quotient (- len pos) 2))])
                                           (cond
                                             [(= lo hi) lo]
                                             [else
@@ -1561,7 +1587,7 @@
                                                      (loop i hi (+ i (quotient (- hi i) 2))))
                                                  ;; still not ok; look lower
                                                  (loop lo i (+ lo (quotient (- i lo) 2))))])))])
-                                 (pango_layout_set_text layout (substring s 0 (max 1 ok-count)))
+                                 (pango_layout_set_text layout (substring s pos (max 1 ok-count)))
                                  (when (zero? ok-count)
                                    ;; find a face that works for the initial character:
                                    (install-alternate-face (string-ref s 0) layout font desc attrs context))
@@ -1569,9 +1595,9 @@
                       (cond
                        [(and draw-mode next-s (not measured?))
                         ;; It's going to take multiple layouts, so first gather measurements.
-                        (let-values ([(w2 h d a) (loop s #f #f #f w h d a #t)])
+                        (let-values ([(w2 h d a) (loop s pos #f #f #f w h d a #t)])
                           ;; draw again, supplying `h', `d', and `a' for the whole line
-                          (loop s draw-mode #t unrotate? w h d a also-measure?))]
+                          (loop s pos draw-mode #t unrotate? w h d a also-measure?))]
                        [else
                         (let ([logical (make-PangoRectangle 0 0 0 0)])
                           (pango_layout_get_extents layout #f logical)
@@ -1601,12 +1627,12 @@
                                              (fl/ (->fl (PangoRectangle-width logical))
                                                   (->fl PANGO_SCALE))))]
                                     [na 0.0])
-                                (loop next-s draw-mode measured? unrotate?
+                                (loop next-s 0 draw-mode measured? unrotate?
                                       (fl+ w nw) (flmax h nh) (flmax d nd) (flmax a na)
                                       also-measure?))])))])))]))
               ;; This is character-by-character mode. It uses a cached per-character+font layout
               ;;  object.
-              (let ([cache (if (or combine?
+              (let ([cache (if (or combine-mode
                                    (not effective-scale-font-cached?))
                                #f
                                (get-size-cache desc))]
@@ -2162,11 +2188,11 @@
   dc%)
 
 (set-text-to-path!
- (lambda (font str x y combine?)
+ (lambda (font str x y combine-mode)
    (define s (cairo_recording_surface_create CAIRO_CONTENT_COLOR_ALPHA #f))
    (define (get-path tmp-dc)
      (send tmp-dc set-font font)
-     (define path (send tmp-dc text-path str x y combine?))
+     (define path (send tmp-dc text-path str x y combine-mode))
      (begin0
       (cairo-path->list path)
       (cairo_path_destroy path)))
@@ -2187,6 +2213,6 @@
      ;; bitmap, but we need one that's large enough
      (define meas-bm (make-object bitmap% 10 10))
      (define meas-dc (make-object -bitmap-dc% meas-bm))
-     (define-values (w h d a) (send meas-dc get-text-extent str font combine?))
+     (define-values (w h d a) (send meas-dc get-text-extent str font combine-mode))
      (define tmp-bm (make-object bitmap% (inexact->exact (ceiling w)) (inexact->exact (ceiling h))))
      (get-path (make-object -bitmap-dc% tmp-bm))])))
