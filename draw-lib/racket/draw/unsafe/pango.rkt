@@ -46,6 +46,18 @@
 (define-ffi-definer define-pangowin32 pangowin32-lib
   #:provide provide)
 
+;; Force a load of AppKit on Mac OS. The `pango_cairo_font_map_new`
+;; function calls `CTFontCollectionCreateFromAvailableFonts`, which
+;; appears to be sensitive to whether AppKit is loaded. If it's not
+;; load, `CTFontCollectionCreateFromAvailableFonts` seems to leave
+;; things in a bad state for later loading AppKit and initializing
+;; `NSApplication` via `sharedApplication` (on Mac OS 12.5.1). We
+;; could delay until a call to `pango_cairo_font_map_new`, but it's
+;; simpler to load eagerly. The extra dependency on AppKit seems ok,
+;; if not ideal.
+(when (eq? 'macosx (system-type))
+  (void (ffi-lib (format "/System/Library/Frameworks/AppKit.framework/AppKit"))))
+
 ;; ALLOCATION NOTE: since Pango calls into Cairo, it has the same
 ;; allocation constraints on arguments as Cairo functions; see
 ;; "cairo.rkt".
