@@ -244,37 +244,74 @@
          void)])]
     [else (values void void)]))
 
-;; This submodule parses "emoji-sequences.txt" from Unicode
-;; to implement "emoji-sequences.rkt"
+;; This submodule parses "emoji-sequences.txt", "emoji-zwj-sequences.txt",
+;; "emoji-variation-sequences.txt", and "emoji-data.txt" from Unicode
+;; to implement "emoji-sequences.rkt".
 (module extract-emoji-sequences racket/base
   (require racket/pretty)
 
+  (define emoji-presentation (make-hasheqv))
+  (call-with-input-file*
+   "emoji-data.txt"
+   (lambda (i)
+     (let loop ()
+       (define l (read-line i))
+       (unless (eof-object? l)
+         (cond
+           [(regexp-match #px"^([0-9A-F]+)[.][.]([0-9A-F]+) +; Emoji_Presentation" l)
+            => (lambda (m)
+                 (for ([i (in-range (string->number (cadr m) 16)
+                                    (add1 (string->number (caddr m) 16)))])
+                   (hash-set! emoji-presentation i #t)))]
+           [(regexp-match #px"^([0-9A-F]+) +; Emoji_Presentation" l)
+            => (lambda (m)
+                 (hash-set! emoji-presentation (string->number (cadr m) 16) #t))])
+         (loop)))))
+
   (define table (make-hasheqv))
-  
-  (let loop ()
-    (define l (read-line))
-    (unless (eof-object? l)
-      (cond
-        [(regexp-match #px"^([0-9A-F]+)[.][.]([0-9A-F]+)" l)
-         => (lambda (m)
-              (for ([i (in-range (string->number (cadr m) 16)
-                                 (add1 (string->number (caddr m) 16)))])
-                (define t (hash-ref table i (lambda () (make-hasheqv))))
-                (hash-set! table i t)
-                (hash-set! t #f #t)))]
-        [(regexp-match? #px"^([0-9A-F]+)" l)
-         (let loop ([l l] [table table])
-           (cond
-             [(regexp-match-positions #px"^[0-9A-F]+" l)
-              => (lambda (m)
-                   (define i (string->number (substring l (caar m) (cdar m)) 16))
-                   (define t (hash-ref table i (lambda () (make-hasheqv))))
-                   (hash-set! table i t)
-                   (loop (substring l (cdar m)) t))]
-             [(regexp-match-positions #px"^\\s" l)
-              (loop (substring l 1) table)]
-             [else (hash-set! table #f #t)]))])
-      (loop)))
+
+  (define (hash-add! ht k v)
+    (when (hash-ref ht k #f)
+      (unless (equal? (hash-ref ht k #f) v)
+        (error "collision building table" k ht)))
+    (hash-set! ht k v))
+
+  (define (parse-sequences i)
+    (let loop ()
+      (define l (read-line i))
+      (unless (eof-object? l)
+        (cond
+          [(regexp-match #px"^([0-9A-F]+)[.][.]([0-9A-F]+)" l)
+           => (lambda (m)
+                (for ([i (in-range (string->number (cadr m) 16)
+                                   (add1 (string->number (caddr m) 16)))])
+                  (define t (hash-ref table i (lambda () (make-hasheqv))))
+                  (hash-set! table i t)
+                  (hash-set! t #f #t)))]
+          [(regexp-match? #px"^([0-9A-F]+)" l)
+           (let loop ([l l] [table table] [prev #f])
+             (cond
+               [(regexp-match-positions #px"^[0-9A-F]+" l)
+                => (lambda (m)
+                     (define i (string->number (substring l (caar m) (cdar m)) 16))
+                     (define t (hash-ref table i (lambda () (make-hasheqv))))
+                     (hash-add! table i t)
+                     (loop (substring l (cdar m)) t (or prev i))
+                     (when (and (= i #xFE0F)
+                                (or (and prev
+                                         (prev . >= . #x1f000))
+                                    (hash-ref emoji-presentation prev #f)))
+                       ;; treat U+FE0F as optional after Emoji_Presentation characters
+                       (for ([(k v) (in-hash t)])
+                         (hash-add! table k v))))]
+               [(regexp-match-positions #px"^\\s" l)
+                (loop (substring l 1) table prev)]
+               [else (hash-set! table #f #t)]))])
+        (loop))))
+
+  (call-with-input-file "emoji-sequences.txt" parse-sequences)
+  (call-with-input-file "emoji-zwj-sequences.txt" parse-sequences)
+  (call-with-input-file "emoji-variation-sequences.txt" parse-sequences)
 
   (let simplify ([table table])
     (for ([(k v) (in-hash table)])
