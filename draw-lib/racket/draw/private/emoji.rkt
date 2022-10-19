@@ -39,18 +39,25 @@
        (cond
          [(= i len) #f]
          [else
-          (let table-loop ([table emoji-sequences] [j i])
-            (define v (hash-ref table (char->integer (string-ref s j)) #f))
-            (cond
-              [(not v) (loop (add1 i))]
-              [(eq? v #t) (cons i (add1 j))]
-              [else
-               (define new-j (add1 j))
-               (or (cond
-                     [(= new-j len) #f]
-                     [else (table-loop v (add1 j))])
-                   (and (hash-ref table #f #f)
-                        (cons i new-j)))]))]))]
+          (or (let table-loop ([table emoji-sequences] [j i])
+                (define v (hash-ref table (char->integer (string-ref s j)) #f))
+                (cond
+                  [(not v) #f]
+                  [(eq? v #t) (cons i (add1 j))]
+                  [else
+                   (define new-j (add1 j))
+                   (or (cond
+                         [(= new-j len) #f]
+                         [else (table-loop v new-j)])
+                       ;; The following two cases are dedundant for
+                       ;; characters in the middle of the search range,
+                       ;; but only one for an end-of-string and the other
+                       ; for start-of-start
+                       (and (hash-ref v #f #f)
+                            (cons i new-j))
+                       (and (hash-ref table #f #f)
+                            (cons i j)))]))
+              (loop (add1 i)))]))]
     [else #f]))
 
 (define-values (emoji-extent draw-emoji)
