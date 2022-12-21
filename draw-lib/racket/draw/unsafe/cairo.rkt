@@ -56,6 +56,8 @@
 (define-syntax-rule (_cbfun . rest)
   (_fun #:atomic? #t . rest))
 
+(define-cairo cairo_version (_cfun -> _int))
+
 (define-cairo cairo_destroy (_cfun _cairo_t -> _void) 
   #:wrap (deallocator))
 

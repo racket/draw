@@ -2172,10 +2172,15 @@
                     (set-cairo_matrix_t-xx! mx 1.0)
                     (set-cairo_matrix_t-yy! mx (/ (cairo_matrix_t-yy mx)))]
                    [else
-                    ;; Pango metrics don't compenstate for the scale for width,
-                    ;; but they do for height:
-                    (init-effective-matrix mx)
-                    (set-cairo_matrix_t-yy! mx 1.0)])
+                    (cond
+                      [((pango_version) . >= . 15003)
+                       ;; Pango metrics are ok:
+                       (void)]
+                      [else
+                       ;; Pango metrics don't compenstate for the scale for width,
+                       ;; but they do for height:
+                       (init-effective-matrix mx)
+                       (set-cairo_matrix_t-yy! mx 1.0)])])
                  (let ([v (sel metrics)])
                    (pango_font_metrics_unref metrics)
                    (fl/ (->fl v)
