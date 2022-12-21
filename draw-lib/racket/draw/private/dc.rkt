@@ -2174,8 +2174,9 @@
                    [else
                     (cond
                       [((pango_version) . >= . 15003)
-                       ;; Pango metrics are ok:
-                       (void)]
+                       ;; No compensation for x, backwards compensation for y
+		       (init-effective-matrix mx)
+                       (set-cairo_matrix_t-yy! mx (/ (cairo_matrix_t-yy mx)))]
                       [else
                        ;; Pango metrics don't compenstate for the scale for width,
                        ;; but they do for height:
