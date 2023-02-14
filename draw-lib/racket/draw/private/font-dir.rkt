@@ -54,7 +54,6 @@
                     [else "Monospace"])]
         [(roman) (case (system-type)
                    [(windows) "Times New Roman"]
-                   [(macosx) "Times"]
                    [else "Serif"])]
         [(decorative swiss) (case (system-type)
                               [(windows) "Arial"]
