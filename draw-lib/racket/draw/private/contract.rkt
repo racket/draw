@@ -289,7 +289,7 @@
   (class/c
     (init [dc (or/c (is-a?/c dc<%>) #f)])
     (get-bounding-box (->m (values real? real? real? real?)))
-    (get-dc (->m (is-a?/c dc<%>)))
+    (get-dc (->m (or/c (is-a?/c dc<%>) #f)))
     (in-region? (->m real? real? boolean?))
     (intersect (->m (is-a?/c region%) void?))
     (is-empty? (->m boolean?))
