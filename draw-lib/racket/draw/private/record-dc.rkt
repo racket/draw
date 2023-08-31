@@ -594,7 +594,7 @@
                 (lambda () '(erase)))))
 
     ;; For the compsable part of the DC, we write things out the long way.
-    ;; For everythign else, we use `define/record'.
+    ;; For everything else, we use `define/record'.
 
     (define/override (set-clipping-region r)
       (do-set-clipping-region r))
