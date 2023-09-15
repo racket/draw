@@ -272,4 +272,81 @@ Sets the scaling factor for PostScript output. See
 Sets the translation (from the bottom left corner) for PostScript
  output. See @method[ps-setup% get-translation].
 
+}
+
+@section{Customizing PDF metadata}
+
+The @racket[ps-setup%] object allows customizing PDF metadata in
+ conjunction with @racket[pdf-dc%], including the document title,
+ author, and other fields. Any newly constructed instance of
+ @racket[pdf-dc%] will apply the following metadata fields to the
+ output PDF from @racket[current-ps-setup] if specified. For
+ PostScript output, these properties are ignored.
+
+@defmethod[(get-title) (or/c string? #f)]{
+Returns the title metadata field, specifying the title of a
+ document.
+}
+
+@defmethod[(get-author) (or/c string? #f)]{
+Returns the author metadata field, specifying the author of a
+ document.
+}
+
+@defmethod[(get-subject) (or/c string? #f)]{
+Returns the subject metadata field, specifying the subject of a
+ document.
+}
+
+@defmethod[(get-keywords) (or/c string? #f)]{
+Returns the keywords metadata field, specifying the keywords
+ associated with a document.
+}
+
+@defmethod[(get-creator) (or/c string? #f)]{
+Returns the creator metadata field, specifying the software that
+ created the document. By default, the creator is set to a string
+ specifying draw-lib and the current racket version.
+}
+
+@defmethod[(get-create-date) (or/c string? #f)]{
+Returns the creation date metadata field, specifying the date and time
+ a document was created, in ISO 8601 format.
+}
+
+@defmethod[(get-mod-date) (or/c string? #f)]{
+Returns the modification date metadata field, specifying the date and
+ time a document was modified, in ISO 8601 format.
+}
+
+@defmethod[(set-title [title (or/c string? #f)]) void?]{
+Sets the title metadata field. See @method[ps-setup% get-title].
+}
+
+@defmethod[(set-author [author (or/c string? #f)]) void?]{
+Sets the author metadata field. See @method[ps-setup% get-author].
+}
+
+@defmethod[(set-subject [subject (or/c string? #f)]) void?]{
+Sets the subject metadata field. See @method[ps-setup% get-subject].
+}
+
+@defmethod[(set-keywords [keywords (or/c string? #f)]) void?]{
+Sets the keywords metadata field. See @method[ps-setup% get-keywords].
+}
+
+@defmethod[(set-creator [creator (or/c string? #f)]) void?]{
+Sets the creator metadata field. See @method[ps-setup% get-creator].
+}
+
+@defmethod[(set-create-date [create-date (or/c string? #f)]) void?]{
+Sets the creation date metadata field. See
+ @method[ps-setup% get-create-date]. The provided date must be in
+ ISO 8601 format.
+}
+
+@defmethod[(set-mod-date [mod-date (or/c string? #f)]) void?]{
+Sets the modification date metadata field. See
+ @method[ps-setup% get-mod-date]. The provided date must be in
+ ISO 8601 format.
 }}
