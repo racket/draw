@@ -174,13 +174,15 @@ See also @racket[color%].
   color is found for the name, @racket[#f] is returned,
   otherwise the result is an immutable color object.
 
-  Color names are normalized by case and spaces are removed
+  Color names are normalized by case and the single space between words (if any) is removed
   from colors before they are looked up in the database, with
   two exceptions: @racket["cornflower blue"] and
   @racket["cadet blue"]. For those two colors, the names are
   compared in a case-insensitive way, but spaces are not
   removed, as the spaceless versions of those names are
-  different colors than the ones with spaces in them.
+  different colors than the ones with spaces in them. These
+  two exceptions are maintained for backwards compatibility.
+  
 
   @examples[#:eval color-db-eval
             (define (show-colors-named . names)
@@ -193,17 +195,16 @@ See also @racket[color%].
                   (send the-color-database find-color name)))))
 
             (show-colors-named "blue"
-                               "BLUE"
-                               "B L U E")
+                               "BLUE")
 
             (show-colors-named "cornflowerblue"
                                "CORNFLOWERBLUE"
-                               "CORN flow ERB lue"
                                "cornflower blue"
                                "CORNFLOWER BLUE"
-                               "cornflower blue "
-                               " CORNFLOWER BLUE"
-                               "cornflower  blue")]
+                               "cAdEt BlUe"
+                               "CadetBlue"
+                               "Light Blue"
+                               "LightBlue")]
 
 @history[#:changed "1.16" @elem{Changed normalization to more generally remove spaces.}]}
 
