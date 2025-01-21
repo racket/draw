@@ -293,7 +293,7 @@ instantiate @racket[color%], or use the @racket[make-color] function:
 @; ------------------------------------------------------------
 @section{Transformations}
 
-Any coordinates or lengths supplied to drawing commends are
+Any coordinates or lengths supplied to drawing commands are
 transformed by a @tech{DC}'s current transformation matrix.  The
 transformation matrix can scale an image, draw it at an offset, or
 rotate all drawing. The transformation can be set directly, or the
