@@ -97,6 +97,8 @@
                      void?)]
     [end-doc (->m void?)]
     [end-page (->m void?)]
+    [start-alpha (->m real? void?)]
+    [end-alpha (->m void?)]
     [erase (->m void?)]
     [flush (->m void?)]
     [get-alpha (->m real?)]

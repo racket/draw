@@ -451,6 +451,17 @@ See also @method[dc<%> set-text-foreground], @method[dc<%>
 @history[#:changed "1.20" @elem{Changed to treat @racket[combine-mode] as @racket['graheme]
                                 different than other true values.}]}
 
+
+@defmethod[(end-alpha)
+           void?]{
+
+Ends a drawing sequence started by @method[dc<%> start-alpha]. If no
+such drawing sequence is in progress, @method[dc<%> end-alpha] has no
+effect.
+
+@history[#:added "1.21"]}
+
+
 @defmethod[(end-doc)
            void?]{
 
@@ -913,7 +924,11 @@ to completely transparent (i.e., invisible) drawing, and @racket[1.0]
 corresponds to completely opaque drawing. For intermediate values,
 drawing is blended with the existing content of the drawing context.
 A color (e.g. for a brush) also has an alpha value; it is combined
-with the drawing context's alpha by multiplying.}
+with the drawing context's alpha by multiplying.
+
+See also @method[dc<%> start-alpha].
+
+}
 
 
 @defmethod*[([(set-background [color (is-a?/c color%)])
@@ -1173,6 +1188,30 @@ Determines how text is drawn:
 
 Sets the draw context's transformation. See @method[dc<%>
 get-transformation] for information about @racket[t].}
+
+@defmethod[(start-alpha [opacity (real-in 0 1)])
+           void?]{
+
+Starts a compositing drawing sequence that is not rendered until
+@method[dc<%> end-alpha] is called. At that point, the accumulated
+sequence is conceptually rendered to a separate context, and then
+transferred at once with @racket[opacity] times the current opacity as
+produced by @method[dc<%> get-alpha]. The @method[dc<%> start-alpha]
+call meanwhile sets the current opacity to @racket[1.0], and
+@method[dc<%> end-alpha] restores the drawing context's opacity to the
+setting before @method[dc<%> start-alpha].
+
+This effect is different than using @method[dc<%> set-alpha] (times
+the current @method[dc<%> get-alpha] result) in the case that drawing
+between @method[dc<%> start-alpha] and @method[dc<%> end-alpha]
+produces overlapping output. In that case, using @method[dc<%>
+set-alpha] would affect the drawing operations separately, while
+@method[dc<%> start-alpha] creates an opacity adjustment on the overlapped
+result, instead.
+
+@history[#:added "1.21"]
+
+}
 
 
 @defmethod[(start-doc [message string?])

@@ -192,6 +192,14 @@
   (_cfun _int _cairo_rectangle_t-pointer/null -> _cairo_surface_t)
   #:wrap (allocator cairo_surface_destroy)
   #:fail (lambda () (lambda (kind rect) #f)))
+(define-cairo cairo_recording_surface_ink_extents (_cfun _cairo_surface_t
+                                                         (x : (_ptr/immobile o _double))
+                                                         (y : (_ptr/immobile o _double))
+                                                         (w : (_ptr/immobile o _double))
+                                                         (h : (_ptr/immobile o _double))
+                                                         -> _void
+                                                         -> (values x y w h))
+  #:fail (lambda () (lambda (s) (values #f #f #f #f))))
 
 ;; Transforms
 (define-cairo cairo_translate (_cfun _cairo_t _double* _double* -> _void))
@@ -268,6 +276,11 @@
   #:wrap (retainer cairo_pattern_destroy car))
 (define-cairo cairo_pattern_set_matrix (_cfun _cairo_pattern_t _cairo_matrix_t-pointer -> _void))
 (define-cairo cairo_pattern_set_extend (_cfun _cairo_pattern_t _int -> _void))
+(define-cairo cairo_pattern_get_surface (_cfun _cairo_pattern_t (s : (_ptr o _cairo_surface_t))
+                                               -> (r : _int)
+                                               -> (and (= r CAIRO_STATUS_SUCCESS)
+                                                       s))
+  #:fail (lambda (p) #f))
 
 ;; Gradients
 (define-cairo cairo_pattern_add_color_stop_rgb (_cfun _cairo_pattern_t _double* _double* _double* _double* -> _void))
@@ -325,6 +338,17 @@
 (define-cairo cairo_surface_get_fallback_resolution (_cfun _cairo_surface_t (x : (_ptr o _double)) (y :  (_ptr o _double))
                                                            -> _void
                                                            -> (values x y)))
+
+;; Groups
+(define-cairo cairo_push_group (_cfun _cairo_t -> _void)
+  ;; 1.2 and later
+  #:fail (lambda () (lambda (cr) #f)))
+(define-cairo cairo_pop_group_to_source (_cfun _cairo_t -> _void)
+  ;; 1.2 and later
+  #:fail (lambda () (lambda (cr) #f)))
+(define-cairo cairo_pop_group (_cfun _cairo_t -> _cairo_surface_t)
+  ;; 1.2 and later
+  #:fail (lambda () (lambda (cr) #f)))
 
 ;; Stream surfaces
 

@@ -237,6 +237,7 @@
        [clip 'none]
        [current-alpha 1.0]
        [current-c-alpha 1.0]
+       [current-in-layer? #f]
        [current-rotation 0.0]
        [current-skew? #f])
   (send hp0 stretchable-height #f)
@@ -329,6 +330,8 @@
 				 [otfg (send dc get-text-foreground)]
 				 [otbg (send dc get-text-background)]
 				 [obm (send dc get-text-mode)])
+                            (when current-in-layer?
+                              (send dc start-alpha 1.0))
 			    (when (positive? flevel)
                               (send dc set-font
                                     (make-object font%
@@ -732,7 +735,7 @@
                               (send dc set-pen old-pen)
                               (send dc set-brush old-brush))
 
-                            ;; Trannsform:
+                            ;; Transform:
                             (let ()
                               (define t (send dc get-transformation))
                               (send dc transform (vector 0 1 1 0 380 170))
@@ -895,7 +898,7 @@
 				  ; Green cross hatch (white BG) on blue field
 				  (send dc draw-rectangle 180 205 20 20)
 				  (send dc set-brush brushs))))
-			    
+
 			    (when (and pixel-copy? last? (not (or kind (eq? dc can-dc))))
 			      (let* ([x 100]
 				     [y 170]
@@ -1070,7 +1073,10 @@
 				(send dc set-pen "blue" 7 'solid)
 				(send dc draw-rectangle 187 310 20 20)
 				(send dc set-pen p)))
-			      
+
+                            (when current-in-layer?
+                              (send dc end-alpha))
+
                             (when (and last? 
                                        (or (and (not (or kind (eq? dc can-dc)))
                                                 (send mem-dc get-bitmap))
@@ -1155,29 +1161,29 @@
 
                       (send dc erase)
 
-		      (send dc set-alpha current-alpha)
+                      (send dc set-alpha current-alpha)
                       (send dc set-rotation (- current-rotation))
                       (send dc set-initial-matrix (if current-skew?
                                                       (vector 1 0 0.2 1 3 0)
                                                       (vector 1 0 0 1 0 0)))
 
-		      (if clip-pre-scale?
-			  (begin
-			    (send dc set-scale 1 1)
-			    (send dc set-origin 0 0))
-			  (begin
-			    (send dc set-scale xscale yscale)
-			    (send dc set-origin offset offset)))
-		      (send dc set-smoothing smoothing)
-		      (send dc set-alignment-scale align-scale)
-		      
-		      (send dc set-background
-			    (if cyan?
-				(send the-color-database find-color "CYAN")
-				(send the-color-database find-color "WHITE")))
+                      (if clip-pre-scale?
+                          (begin
+                            (send dc set-scale 1 1)
+                            (send dc set-origin 0 0))
+                          (begin
+                            (send dc set-scale xscale yscale)
+                            (send dc set-origin offset offset)))
+                      (send dc set-smoothing smoothing)
+                      (send dc set-alignment-scale align-scale)
 
-		      ;(send dc set-clipping-region #f)
-		      (send dc erase)
+                      (send dc set-background
+                            (if cyan?
+                                (send the-color-database find-color "CYAN")
+                                (send the-color-database find-color "WHITE")))
+
+                      ;(send dc set-clipping-region #f)
+                      (send dc erase)
 
                       (let ([clip-dc dc])
                         (if clock-clip?
@@ -1250,19 +1256,19 @@
                                                  (yloop (+ y w s))))))))
                                  (send dc clear)]))))
 
-		      (when clip-pre-scale?
-			(send dc set-scale xscale yscale)
-			(send dc set-origin offset offset)
+                      (when clip-pre-scale?
+                        (send dc set-scale xscale yscale)
+                        (send dc set-origin offset offset)
 
-			(let ([r (send dc get-clipping-region)])
-			  (send dc set-clipping-rect 0 0 20 20)
-			  (if r
-			      (let ([r2 (make-object region% dc)])
-				(send r2 set-rectangle 0 0 0 0)
-				(send r xor r2)
-				(send r2 xor r)
-				(send dc set-clipping-region r2))
-			      (send dc set-clipping-region #f))))
+                        (let ([r (send dc get-clipping-region)])
+                          (send dc set-clipping-rect 0 0 20 20)
+                          (if r
+                              (let ([r2 (make-object region% dc)])
+                                (send r2 set-rectangle 0 0 0 0)
+                                (send r xor r2)
+                                (send r2 xor r)
+                                (send dc set-clipping-region r2))
+                              (send dc set-clipping-region #f))))
 
                       (unless clock-clip?
                         (let ([r (send dc get-clipping-region)])
@@ -1282,59 +1288,59 @@
                           (send r set-rectangle 0 0 10 10)
                           (send dc set-clipping-region r2)))
 
-		      ;; check default pen/brush:
-		      (send dc draw-rectangle 0 0 5 5)
-		      (send dc draw-line 0 0 20 6)
+                      ;; check default pen/brush:
+                      (send dc draw-rectangle 0 0 5 5)
+                      (send dc draw-line 0 0 20 6)
 
-		      (send dc set-font (make-object font% 10 'default))
+                      (send dc set-font (make-object font% 10 'default))
 
-		      (draw-series dc pen0s pen0t pen0x "0 x 0" 5 0 0 #f)
+                      (draw-series dc pen0s pen0t pen0x "0 x 0" 5 0 0 #f)
 
                       (mutate-region)
-		      
-		      (draw-series dc pen1s pen1t pen1x "1 x 1" 70 0 1 #f)
-		      
-		      (draw-series dc pen2s pen2t pen2x "2 x 2" 135 0 2 #t)
 
-		      (unless clock-clip?
-			(let ([r (send dc get-clipping-region)])
+                      (draw-series dc pen1s pen1t pen1x "1 x 1" 70 0 1 #f)
+
+                      (draw-series dc pen2s pen2t pen2x "2 x 2" 135 0 2 #t)
+
+                      (unless clock-clip?
+                        (let ([r (send dc get-clipping-region)])
                           (if (eq? clip 'none)
-			      (when r
-				(show-error 'draw-test "shouldn't have been a clipping region"))
-			      (let*-values ([(x y w h) (send r get-bounding-box)]
-					    [(l) (list x y w h)]
-					    [(=~) (lambda (x y)
-						    (or (not y)
+                              (when r
+                                (show-error 'draw-test "shouldn't have been a clipping region"))
+                              (let*-values ([(x y w h) (send r get-bounding-box)]
+                                            [(l) (list x y w h)]
+                                            [(=~) (lambda (x y)
+                                                    (or (not y)
                                                         (<= (- x 2) y (+ x 2))))])
-				(unless (andmap =~ l
-						(let ([l
-						       (case clip
-							 [(rect) '(100. -25. 10. 400.)]
-							 [(rect2) '(50. -25. 10. 400.)]
-							 [(poly circle poly-rect) '(0. 60. 180. 180.)]
-							 [(wedge) '(26. 60. 128. 90.)]
-							 [(lam) '(58. 10. 202. 281.)]
-							 [(A) '(#f #f #f #f)]
-							 [(rect+poly rect+circle poly^rect) '(0. -25. 180. 400.)]
-							 [(poly&rect) '(100. 60. 10. 180.)]
-							 [(roundrect) '(80. 200. 125. 40.)]
-							 [(polka) '(0. 0. 310. 510.)]
-							 [(empty) '(0. 0. 0. 0.)])])
-						  (if clip-pre-scale?
-						      (list (- (/ (car l) xscale) offset)
-							    (- (/ (cadr l) yscale) offset)
-							    (- (/ (caddr l) xscale) offset)
-							    (- (/ (cadddr l) yscale) offset))
-						      l)))
-				  (show-error 'draw-test "clipping region changed badly: ~a" l))))))
+                                (unless (andmap =~ l
+                                                (let ([l
+                                                       (case clip
+                                                         [(rect) '(100. -25. 10. 400.)]
+                                                         [(rect2) '(50. -25. 10. 400.)]
+                                                         [(poly circle poly-rect) '(0. 60. 180. 180.)]
+                                                         [(wedge) '(26. 60. 128. 90.)]
+                                                         [(lam) '(58. 10. 202. 281.)]
+                                                         [(A) '(#f #f #f #f)]
+                                                         [(rect+poly rect+circle poly^rect) '(0. -25. 180. 400.)]
+                                                         [(poly&rect) '(100. 60. 10. 180.)]
+                                                         [(roundrect) '(80. 200. 125. 40.)]
+                                                         [(polka) '(0. 0. 310. 510.)]
+                                                         [(empty) '(0. 0. 0. 0.)])])
+                                                  (if clip-pre-scale?
+                                                      (list (- (/ (car l) xscale) offset)
+                                                            (- (/ (cadr l) yscale) offset)
+                                                            (- (/ (caddr l) xscale) offset)
+                                                            (- (/ (cadddr l) yscale) offset))
+                                                      l)))
+                                  (show-error 'draw-test "clipping region changed badly: ~a" l))))))
 
-		      (let-values ([(w h) (send dc get-size)])
-			(unless (cond
-				 [kind #t]
-				 [use-bad? #t]
-				 [use-bitmap? (and (= w (ceiling (* xscale DRAW-WIDTH))) (= h (ceiling (* yscale DRAW-HEIGHT))))]
-				 [else (and (= w (* 2 DRAW-WIDTH)) (= h (* 2 DRAW-HEIGHT)))])
-			  (show-error 'x "wrong size reported by get-size: ~a ~a (not ~a)" w h
+                      (let-values ([(w h) (send dc get-size)])
+                        (unless (cond
+                                  [kind #t]
+                                  [use-bad? #t]
+                                  [use-bitmap? (and (= w (ceiling (* xscale DRAW-WIDTH))) (= h (ceiling (* yscale DRAW-HEIGHT))))]
+                                  [else (and (= w (* 2 DRAW-WIDTH)) (= h (* 2 DRAW-HEIGHT)))])
+                          (show-error 'x "wrong size reported by get-size: ~a ~a (not ~a)" w h
                                       (if use-bitmap?
                                           (list (* xscale DRAW-WIDTH) (* yscale DRAW-HEIGHT))
                                           (list (* 2 DRAW-WIDTH) (* 2 DRAW-HEIGHT))))))
@@ -1367,7 +1373,7 @@
 		   (set! compat-bitmap? (= 6 (send self get-selection)))
 		   (set! scaledX-bitmap? (= 7 (send self get-selection)))
 		   (set! scaled3-bitmap? (= 8 (send self get-selection)))
-		   (set! use-record? (<= 9 (send self get-selection) 8))
+		   (set! use-record? (<= 9 (send self get-selection)))
 		   (set! serialize-record? (= 10 (send self get-selection)))
 		   (set! use-bad? (< 11 (send self get-selection)))
 		   (send canvas refresh)))
@@ -1523,6 +1529,10 @@
                          (set! current-alpha a)
                          (send canvas refresh))))
                    10 '(horizontal plain))
+      (make-object check-box% "In Layer" hp4
+                   (lambda (c e)
+                     (set! current-in-layer? (send c get-value))
+                     (send canvas refresh)))
       (make-object check-box% "Cvs Fade" hp4
                    (lambda (c e)
                      (set! current-c-alpha (if (send c get-value) 0.5 1.0))

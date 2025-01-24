@@ -272,6 +272,8 @@
     [(windows) UNALIGNED-INDEX]
     [else 0]))
 
+(struct alpha-layer (cr surface alpha old-alpha))
+
 (define (dc-mixin backend%)
   (defclass* dc% backend% (dc<%>)
     (inherit flush-cr get-cr release-cr release-unchanged-cr end-cr
@@ -290,15 +292,22 @@
     ;; have a separate per-dc lock, we can hit deadlock due to
     ;; lock order.
 
-    (define-syntax-rule (with-cr* release-cr default cr . body)
+    (define-syntax-rule (with-cr* skip-alpha? release-cr default cr . body)
       ;; Faster:
       (begin
         (start-atomic)
-        (let ([cr (get-cr)])
+        (let* ([alpha-cr (let ([alphas (if skip-alpha?
+                                           (and (pair? group-alphas)
+                                                (cdr group-alphas))
+                                           group-alphas)])
+                           (and (pair? alphas)
+                                (alpha-layer-cr (car alphas))))]
+               [cr (or alpha-cr (get-cr))])
           (if cr 
               (begin0
                 (begin . body)
-                (release-cr cr)
+                (unless alpha-cr
+                  (release-cr cr))
                 (end-atomic))
               (begin
                 (end-atomic)
@@ -314,14 +323,18 @@
 		   (lambda () . body) 
 		   (lambda () (release-cr cr)))
                default)))))
-    
+
     (define-syntax-rule (with-cr default cr . body)
-      (with-cr* release-cr default cr . body))
+      (with-cr* #f release-cr default cr . body))
     (define-syntax-rule (with-unchanged-cr default cr . body)
-      (with-cr* release-unchanged-cr default cr . body))
+      (with-cr* #f release-unchanged-cr default cr . body))
+    (define-syntax-rule (with-cr/skip-alpha default cr . body)
+      (with-cr* #t release-cr default cr . body))
 
     (define/public (in-cairo-context cb)
       (with-cr (void) cr (cb cr)))
+
+    (define group-alphas null)
 
     ;; pango contexts, one per smoothing kind:
     (define contexts (make-vector (vector-length font-maps) #f))
@@ -794,6 +807,38 @@
        (cairo_set_source_rgba cr 1.0 1.0 1.0 1.0)
        (cairo_paint cr)
        (cairo_set_operator cr CAIRO_OPERATOR_OVER)))
+
+    (define/public (start-alpha g-alpha)
+      (with-cr
+        (check-ok 'start-alpha)
+        cr
+        (let ()
+          (define surface (cairo_recording_surface_create CAIRO_CONTENT_COLOR_ALPHA #f))
+          (define alpha-cr (cairo_create surface))
+          (do-reset-matrix alpha-cr)
+          (set! group-alphas (cons (alpha-layer alpha-cr surface g-alpha alpha) group-alphas))
+          (set! alpha 1.0))))
+
+    (define/public (end-alpha)
+      (with-cr/skip-alpha
+       (check-ok 'end-alpha)
+        cr
+        (unless (null? group-alphas)
+          (let ([al (car group-alphas)])
+            (set! group-alphas (cdr group-alphas))
+            (set! alpha (alpha-layer-old-alpha al))
+            (define surface (alpha-layer-surface al))
+            (cairo_save cr)
+            (cairo_identity_matrix cr)
+            (let-values ([(x y w h) (cairo_recording_surface_ink_extents surface)])
+              (when x
+                (cairo_rectangle cr x y w h)
+                (cairo_clip cr)))
+            (cairo_set_source_surface cr surface 0 0)
+            (cairo_paint_with_alpha cr (* alpha (alpha-layer-alpha al)))
+            (cairo_restore cr)
+            (cairo_destroy (alpha-layer-cr al))
+            (cairo_surface_destroy (alpha-layer-surface al))))))
 
     (def/public (copy [real? x] [real? y] [nonnegative-real? w] [nonnegative-real? h]
                       [real? x2] [real? y2])

@@ -689,7 +689,11 @@
                                 (install-transform dc (struct-copy dc-state state [initial-matrix mi]))))]
       [(transform) (lambda (t)
                      (lambda (dc state)
-                       (install-transform dc (apply-transform state t))))])
+                       (install-transform dc (apply-transform state t))))]
+      [(erase) (lambda ()
+                 (lambda (dc state)
+                   (send dc erase)
+                   state))])
      ;; remaining clauses are generated:
 
      (define/record (set-smoothing s))
@@ -742,7 +746,11 @@
      (define/record (draw-bitmap-section [src clone-bitmap convert-bitmap unconvert-bitmap]
                                          dx dy sx sy sw sh [[style 'solid]] 
                                          [[color black] clone-color convert-color unconvert-color]
-                                         [[mask #f] clone-bitmap convert-bitmap unconvert-bitmap])))))
+                                         [[mask #f] clone-bitmap convert-bitmap unconvert-bitmap]))
+
+     (define/record (start-alpha a))
+
+     (define/record (end-alpha)))))
 
 ;; ----------------------------------------
 
