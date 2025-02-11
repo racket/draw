@@ -10,7 +10,7 @@
          "../unsafe/cairo.rkt"
          "emoji-sequences.rkt")
 
-;; On Mac OS, Pango+Cairo doesn't handle emoji, so we implement emoji
+;; On Mac OS, Pango+Cairo doesn't handle emoji modifiers, so we implement emoji
 ;; rendering directly with CoreText primitives. Emoji modifiers are
 ;; supported when rendering text in "combined" mode, but not when
 ;; rendering charcter-by-character (since a modifier is a Unicode code
@@ -92,6 +92,8 @@
                                             [d _CGFloat]
                                             [tx _CGFloat]
                                             [ty _CGFloat]))
+        (define-cstruct _CGPoint ([x _CGFloat]
+                                  [y _CGFloat]))
 
         (define-cpointer-type _CGFontRef)
         (define-cg CGFontCreateWithFontName (_fun _NSString -> _CGFontRef)
@@ -110,6 +112,7 @@
         (define-cg CGContextScaleCTM (_fun _CGContextRef _CGFloat _CGFloat -> _void))
         (define-cg CGContextConcatCTM (_fun _CGContextRef _CGAffineTransform -> _void))
 
+        (define-cg CGContextGetTextPosition (_fun _CGContextRef -> _CGPoint))
         (define-cg CGContextSetTextPosition (_fun _CGContextRef _CGFloat _CGFloat -> _void))
 
         (define-cpointer-type _CTLineRef)
@@ -218,6 +221,7 @@
                (define cg (cairo_quartz_get_cg_context_with_clip cr))
 
                ;; Set CG transformation to match Cairo plus displacement for glyph
+               (define pos (CGContextGetTextPosition cg))
                (CGContextSaveGState cg)
                (CGContextConcatCTM cg tm)
                (CGContextTranslateCTM cg
@@ -233,6 +237,7 @@
 
                ;; Go back to Cairo mode for the CG
                (CGContextRestoreGState cg)
+               (CGContextSetTextPosition cg (CGPoint-x pos) (CGPoint-y pos))
                (cairo_quartz_finish_cg_context_with_clip cr)
                (cairo_surface_mark_dirty s)])))
 
