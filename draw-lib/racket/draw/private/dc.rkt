@@ -1535,6 +1535,7 @@
           (cairo_rotate cr (- angle)))
         (let ([desc (get-pango font)]
               [attrs (send font get-pango-attrs)]
+              [underlined? (send font get-underlined)]
               [force-hinting (case (font->hinting font)
                                [(aligned) round]
                                [else values])]
@@ -1733,7 +1734,7 @@
                  (unless (and
                           (eq? draw-mode 'draw)
                           cache
-                          (not attrs) ; fast path doesn't handle underline
+                          (not underlined?) ; fast path doesn't handle underline
                           ((string-length s) . > . 1)
                           (let ([len (string-length s)]
                                 [first-v (hash-ref cache (char->integer (string-ref s 0)) #f)]
