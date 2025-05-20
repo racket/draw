@@ -459,7 +459,15 @@ Ends a drawing sequence started by @method[dc<%> start-alpha]. If no
 such drawing sequence is in progress, @method[dc<%> end-alpha] has no
 effect.
 
-@history[#:added "1.21"]}
+The @racket[dc<%>] interface has an implementation of this method
+that implementing classes should override. The @racket[dc<%>]
+implementation has no effect.
+
+@history[#:added "1.21"
+         #:changed "1.22" @elem{Added an implementation of the method to
+                                the interface.}]
+
+}
 
 
 @defmethod[(end-doc)
@@ -1209,7 +1217,13 @@ set-alpha] would affect the drawing operations separately, while
 @method[dc<%> start-alpha] creates an opacity adjustment on the overlapped
 result, instead.
 
-@history[#:added "1.21"]
+The @racket[dc<%>] interface has an implementation of this method
+that implementing classes should override. The @racket[dc<%>]
+implementation has no effect.
+
+@history[#:added "1.21"
+         #:changed "1.22" @elem{Added an implementation of the method to
+                                the interface.}]
 
 }
 

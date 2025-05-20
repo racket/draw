@@ -97,8 +97,10 @@
                      void?)]
     [end-doc (->m void?)]
     [end-page (->m void?)]
-    [start-alpha (->m real? void?)]
-    [end-alpha (->m void?)]
+    [start-alpha (->m real? void?)
+                 #:public (lambda (a) (void))]
+    [end-alpha (->m void?)
+               #:public (lambda () (void))]
     [erase (->m void?)]
     [flush (->m void?)]
     [get-alpha (->m real?)]

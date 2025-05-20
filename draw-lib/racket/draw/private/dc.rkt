@@ -808,7 +808,7 @@
        (cairo_paint cr)
        (cairo_set_operator cr CAIRO_OPERATOR_OVER)))
 
-    (define/public (start-alpha g-alpha)
+    (define/override (start-alpha g-alpha)
       (with-cr
         (check-ok 'start-alpha)
         cr
@@ -819,7 +819,7 @@
           (set! group-alphas (cons (alpha-layer alpha-cr surface g-alpha alpha) group-alphas))
           (set! alpha 1.0))))
 
-    (define/public (end-alpha)
+    (define/override (end-alpha)
       (with-cr/skip-alpha
        (check-ok 'end-alpha)
         cr
