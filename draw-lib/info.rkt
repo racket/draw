@@ -13,7 +13,10 @@
     ("draw-win32-arm64-3" #:platform "win32\\arm64")
     ("draw-x86_64-linux-natipkg-3" #:platform "x86_64-linux-natipkg")
     ("draw-x11-x86_64-linux-natipkg" #:platform "x86_64-linux-natipkg")
-    ("draw-ttf-x86_64-linux-natipkg" #:platform "x86_64-linux-natipkg")))
+    ("draw-ttf-x86_64-linux-natipkg" #:platform "x86_64-linux-natipkg")
+    ("draw-aarch64-linux-natipkg-3" #:platform "aarch64-linux-natipkg")
+    ("draw-x11-aarch64-linux-natipkg" #:platform "aarch64-linux-natipkg")
+    ("draw-ttf-aarch64-linux-natipkg" #:platform "aarch64-linux-natipkg")))
 
 (define pkg-desc "implementation (no documentation) part of \"draw\"")
 
