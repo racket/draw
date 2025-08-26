@@ -1,5 +1,6 @@
 #lang racket/base
 (require racket/class
+         (only-in racket/contract/base or/c)
          "syntax.rkt")
 
 (provide ps-setup%
@@ -26,6 +27,9 @@
   (and (string? s)
        (assoc s paper-sizes)))
 
+(define default-creator-string
+  (string-append "draw-lib (racket " (version) " https://racket-lang.org)"))
+
 (define ps-setup%
   (class object%
     (properties
@@ -35,7 +39,14 @@
      [[(symbol-in preview file printer) mode] 'file]
      [[(symbol-in portrait landscape) orientation] 'portrait]
      [[paper-name-string? paper-name] "Letter 8 1/2 x 11 in"]
-     [[string? preview-command] "gv"])
+     [[string? preview-command] "gv"]
+     [[(or/c string? #f) title] #f]
+     [[(or/c string? #f) author] #f]
+     [[(or/c string? #f) subject] #f]
+     [[(or/c string? #f) keywords] #f]
+     [[(or/c string? #f) creator] default-creator-string]
+     [[(or/c string? #f) create-date] #f]
+     [[(or/c string? #f) mod-date] #f])
 
     (define editor-margin-x 20.0)
     (define editor-margin-y 20.0)
