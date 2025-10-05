@@ -40,11 +40,21 @@
 ;      = end-y - arrow-head-size-cos-arrow-head-angle-sin-alpha - arrow-head-size-sin-arrow-head-angle-cos-alpha
 
 ; dc<%> real real real real real real -> void
+; bb : (or/c #f (list/c (or/c #f real?) (or/c #f real?) (or/c #f real?) (or/c #f real?)))
 ; draw one arrow
 (define (draw-arrow dc uncropped-pre-start-x uncropped-pre-start-y uncropped-pre-end-x uncropped-pre-end-y dx dy
                     #:pen-width [pen-width #f]
                     #:arrow-head-size [arrow-head-size 8]
-                    #:arrow-root-radius [arrow-root-radius 2.5])
+                    #:arrow-root-radius [arrow-root-radius 2.5]
+                    #:%age [%age #f]
+                    #:bb [bb #f])
+  (define %age-ctc (format "~s" '(or/c #f (real-in -1 1) "leftup")))
+  (unless (or (not %age)
+              (and (real? %age) (<= -1 %age 1))
+              (equal? %age "leftup"))
+    (raise-argument-error 'draw-arrow
+                          %age-ctc
+                          %age))
   
   (define arrow-head-size-cos-arrow-head-angle (* arrow-head-size cos-arrow-head-angle))
   (define arrow-head-size-sin-arrow-head-angle (* arrow-head-size sin-arrow-head-angle))
@@ -69,7 +79,13 @@
                       (send p get-style)
                       (send p get-cap)
                       (send p get-join)))))
-      (send dc draw-line start-x start-y end-x end-y)
+      (cond
+        [%age
+         (define saved-brush (send dc get-brush))
+         (send dc set-brush "black" 'transparent)
+         (curve-between-two-points dc start-x start-y end-x end-y %age bb)
+         (send dc set-brush saved-brush)]
+        [else (send dc draw-line start-x start-y end-x end-y)])
       (send dc set-pen saved-pen)
       (when (and (< smallest start-x largest)
                  (< smallest start-y largest))
@@ -82,8 +98,8 @@
           (let* ([offset-x (- end-x start-x)]
                  [offset-y (- end-y start-y)]
                  [arrow-length (sqrt (+ (* offset-x offset-x) (* offset-y offset-y)))]
-                 [cos-alpha (/ offset-x arrow-length)]
-                 [sin-alpha (/ offset-y arrow-length)]
+                 [cos-alpha (if (equal? %age "leftup") (cos (* pi -1/2)) (/ offset-x arrow-length))]
+                 [sin-alpha (if (equal? %age "leftup") (sin (* pi -1/2)) (/ offset-y arrow-length))]
                  [arrow-head-size-cos-arrow-head-angle-cos-alpha (* arrow-head-size-cos-arrow-head-angle cos-alpha)]
                  [arrow-head-size-cos-arrow-head-angle-sin-alpha (* arrow-head-size-cos-arrow-head-angle sin-alpha)]
                  [arrow-head-size-sin-arrow-head-angle-cos-alpha (* arrow-head-size-sin-arrow-head-angle cos-alpha)]
@@ -98,6 +114,89 @@
                         (- end-y arrow-head-size-cos-arrow-head-angle-sin-alpha arrow-head-size-sin-arrow-head-angle-cos-alpha))])
             (send dc draw-polygon (list pt1 pt2 pt3)))))
       (send dc set-smoothing old-smoothed))))
+
+(define (curve-between-two-points dc start-x start-y end-x end-y %age bb)
+  (define size-of-arrowhead 0)
+  (draw-curve dc size-of-arrowhead
+              end-x end-y
+              start-x start-y
+              (cond
+                [(equal? %age "leftup")
+                 (* pi -1/2)]
+                [else
+                 #f])
+              (cond
+                [(equal? %age "leftup")
+                 0]
+                [else
+                 (* %age pi)])
+              (cond
+                [(equal? %age "leftup")
+                 1/2]
+                [else #f])
+              1/2
+              bb))
+
+;; This code is copied from the pict library, specifically
+;; the pin-curve* function in pict/private/main.rkt
+;; That function implements the pull and angle arguments
+;; to functions like `pin-arrow-line`. The sa and ea
+;; arguments are the angles and sp and ep are the pulls
+(define (draw-curve dc sz
+                    sx0 sy0
+                    dx0 dy0
+                    sa ea
+                    sp ep
+                    bb)
+  (define path (new dc-path%))
+  (define start-arrow? #f)
+  (define end-arrow? #f)
+  (let* ([sa (or sa
+                 (get-angle (- sy0 dy0) (- dx0 sx0)))]
+         [ea (or ea
+                 (get-angle (- sy0 dy0) (- dx0 sx0)))]
+         [d
+          ;; in the pict library, the pull is proportional to the distance between
+          ;; the two points
+          #;(* .5 (sqrt (+ (* (- dy0 sy0) (- dy0 sy0)) (* (- dx0 sx0) (- dx0 sx0)))))
+          ;; but here, we make the pull proportional only to the `x` distance
+          ;; (and anyway, we're never using a y pull!)
+          (abs (- dx0 sx0))]
+         [sp (* (or sp 1/4) d)]
+         [ep (* (or ep 1/4) d)])
+    (let ([dx (if end-arrow? (- dx0 (* sz (cos ea))) dx0)]
+          [dy (if end-arrow? (+ dy0 (* sz (sin ea))) dy0)]
+          [sx (if start-arrow? (+ sx0 (* sz (cos sa))) sx0)]
+          [sy (if start-arrow? (- sy0 (* sz (sin sa))) sy0)])
+      (send path move-to sx sy)
+      (send path curve-to
+            (+ sx (* sp (cos sa)))
+            (- sy (* sp (sin sa)))
+            (- dx (* ep (cos ea)))
+            (+ dy (* ep (sin ea)))
+            dx dy)
+      (cond
+        [bb
+         (define rgn (new region% [dc dc]))
+         (send rgn set-path path)
+         (define-values (r-left r-top r-width r-height) (send rgn get-bounding-box))
+         (define r-right (+ r-left r-width))
+         (define r-bottom (+ r-top r-height))
+         (define-values (d-left d-top d-right d-bottom) (apply values bb))
+         (cond
+           [(and (or (not d-left) (<= d-left r-left))
+                 (or (not d-top) (<= d-top r-top))
+                 (or (not d-right) (>= d-right r-right))
+                 (or (not d-bottom) (>= d-bottom r-bottom)))
+            (send dc draw-path path)]
+           [else
+            (send dc draw-line sx0 sy0 dx0 dy0)])]
+        [else (send dc draw-path path)]))))
+
+(define (get-angle x y)
+  (if (and (zero? x) (zero? y))
+      0
+      (atan x y)))
 
 ;; crop-to : number number number number -> (values number number)
 ;; returns x,y if they are in the range defined by largest and smallest
