@@ -52,5 +52,6 @@ If @racket[pen-width] is @racket[#f], the current pen width is used.
  bounding box, then the attempt to curve is abandoned, and a
  straight line is drawn.
 
-@history[#:added "1.9"]{}
+@history[#:added "1.9"
+         #:changed "1.23" @list{Added the @racket[%age] and @racket[bb] arguments.}]{}
 }
