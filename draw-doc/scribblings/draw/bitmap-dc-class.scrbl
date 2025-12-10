@@ -170,12 +170,6 @@ Installs a bitmap into the DC, so that drawing operations on the bitmap
  DC draw to the bitmap. A bitmap is removed from a DC by setting the
  bitmap to @racket[#f].
 
-A bitmap can be selected into at most one bitmap DC, and only when it
- is not used by a control (as a label) or in a @racket[pen%] or
- @racket[brush%] (as a stipple). If the argument to @method[bitmap-dc%
- set-bitmap] is already in use by another DC, a control, a
- @racket[pen%], or a @racket[brush%], @|MismatchExn|.
-
 }
 
 @defmethod[(set-pixel [x real?]
