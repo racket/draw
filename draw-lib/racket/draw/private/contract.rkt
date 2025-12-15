@@ -437,7 +437,7 @@
                                                    'png 'png/mask 'png/alpha
                                                    'xbm 'xbm/alpha 'xpm 'xpm/alpha
                                                    'bmp 'bmp/alpha)
-                                             (or/c (is-a?/c color%) #f) ;; actually always immutable
+                                             (or/c (instanceof/c color%/c) #f) ;; actually always immutable
                                              (and/c bytes? immutable?)
                                              #:immutable #t)
                                    #f)))
