@@ -177,7 +177,7 @@
              pen-style/c)
             (pen-cap-style/c
               pen-join-style/c)
-            (or/c (is-a?/c pen%) #f)))))
+            (or/c (instanceof/c pen%/c) #f)))))
 
 (define brush%/c
   (class/c
@@ -197,7 +197,7 @@
     (find-or-create-brush
       (->m (or/c (is-a?/c color%) string?)
            brush-style/c
-           (or/c (is-a?/c brush%) #f)))))
+           (or/c (instanceof/c brush%/c) #f)))))
 
 (define linear-gradient%/c
   (class/c
