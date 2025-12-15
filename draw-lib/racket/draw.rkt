@@ -23,10 +23,10 @@
          "draw/private/gl-context.rkt")
 
 (provide color-database<%>
-	 the-color-database
          font-list% the-font-list make-font
          font-name-directory<%> the-font-name-directory
 	 (contract-out
+          [the-color-database color-database/c]
           [current-font-list (parameter/c (or/c (is-a?/c font-list%) #f))]
           [the-pen-list (instanceof/c pen-list%/c)]
           [the-brush-list (instanceof/c brush-list%/c)])

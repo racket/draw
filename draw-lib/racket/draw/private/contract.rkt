@@ -35,6 +35,7 @@
          make-brush/c
          make-pen/c
          color%/c
+         color-database/c
          point%/c
          font%/c
          pen%/c
@@ -107,17 +108,26 @@
         #:immutable? any/c)
        (is-a?/c pen%)))
 
+(define (mutable-color? c)
+  (and (is-a? c color%)
+       (not (send c is-immutable?))))
+
 (define color%/c
   (class/c
     (alpha (->m (real-in 0 1)))
     (red  (->m byte?))
     (blue (->m byte?))
     (green (->m byte?))
-    (copy-from (->m (is-a?/c color%) (is-a?/c color%)))
+    (copy-from (-> mutable-color? (is-a?/c color%) (is-a?/c color%)))
     (ok? (->m boolean?))
-    (set (->*m (byte? byte? byte?)
-               ((real-in 0 1))
-               void?))))
+    (set (->* (mutable-color? byte? byte? byte?)
+              ((real-in 0 1))
+              void?))))
+
+(define color-database/c
+  (object/c
+   [find-color (->m string? (or/c (instanceof/c color%/c) #f))]
+   [get-names (->m (listof string?))]))
 
 (define point%/c
   (class/c
