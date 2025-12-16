@@ -155,7 +155,7 @@
 (define pen%/c
   (class/c
     (get-cap (->m pen-cap-style/c))
-    (get-color (->m (is-a?/c color%)))
+    (get-color (->m (instanceof/c color%/c)))
     (get-join (->m pen-join-style/c))
     (get-stipple (->m (or/c (is-a?/c bitmap%) #f)))
     (get-style (->m pen-style/c))
@@ -181,7 +181,7 @@
 
 (define brush%/c
   (class/c
-    (get-color (->m (is-a?/c color%)))
+    (get-color (->m (instanceof/c color%/c)))
     (get-stipple (->m (or/c (is-a?/c bitmap%) #f)))
     (get-style (->m brush-style/c))
     (set-color (case->m
