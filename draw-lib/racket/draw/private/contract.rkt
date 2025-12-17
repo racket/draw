@@ -90,6 +90,7 @@
 (define instanceof-dc-path%/c (instanceof/c (recursive-contract dc-path%/c)))
 (define instanceof-point%/c (instanceof/c (recursive-contract point%/c)))
 (define instanceof-font%/c (instanceof/c (recursive-contract font%/c)))
+(define instanceof-dc<%>/c (instanceof/c (recursive-contract dc<%>/c)))
 
 (define make-color/c
   (->* (byte? byte? byte?)
@@ -234,76 +235,249 @@
     [get-circles (->m (values real? real? real? real? real? real?))]
     [get-stops (->m (listof (list/c real? instanceof-color%/c)))]))
 
-(define bitmap-dc%/c
+(define dc<%>/c
   (class/c
+   [cache-font-metrics-key (->m exact-integer?)]
+   [clear (->m void?)]
+   [copy (->m real? real?
+              (and/c real? (not/c negative?))
+              (and/c real? (not/c negative?))
+              real? real?
+              void?)]
+   [draw-arc (->m real? real?
+                  (and/c real? (not/c negative?))
+                  (and/c real? (not/c negative?))
+                  real? real?
+                  void?)]
+   [draw-bitmap (->*m (instanceof-bitmap%/c
+                       real?
+                       real?)
+                      ((or/c 'solid 'opaque 'xor)
+                       instanceof-color%/c
+                       (or/c instanceof-bitmap%/c #f))
+                      boolean?)]
+   [draw-bitmap-section (->*m (instanceof-bitmap%/c
+                               real? real?
+                               real? real?
+                               (and/c real? (not/c negative?))
+                               (and/c real? (not/c negative?)))
+                              ((or/c 'solid 'opaque 'xor)
+                               instanceof-color%/c
+                               (or/c instanceof-bitmap%/c #f))
+                              boolean?)]
+   [draw-ellipse (->m real? real?
+                      (and/c real? (not/c negative?))
+                      (and/c real? (not/c negative?))
+                      void?)]
+   [draw-line (->m real? real? real? real? void?)]
+   [draw-lines (->*m ((or/c (listof instanceof-point%/c)
+                            (listof (cons/c real? real?))))
+                     (real?
+                      real?)
+                     void?)]
+   [draw-path (->*m (instanceof-dc-path%/c)
+                    (real?
+                     real?
+                     (or/c 'odd-even 'winding))
+                    void?)]
+   [draw-point (->m real? real? void?)]
+   [draw-polygon (->*m ((or/c (listof instanceof-point%/c)
+                              (listof (cons/c real? real?))))
+                       (real?
+                        real?
+                        (or/c 'odd-even 'winding))
+                       void?)]
+   [draw-rectangle (->m real? real?
+                        (and/c real? (not/c negative?))
+                        (and/c real? (not/c negative?))
+                        void?)]
+   [draw-rounded-rectangle (->*m (real? real?
+                                        (and/c real? (not/c negative?))
+                                        (and/c real? (not/c negative?)))
+                                 (real?)
+                                 void?)]
+   [draw-spline (->m real? real?
+                     real? real?
+                     real? real?
+                     void?)]
+   [draw-text (->*m (string?
+                     real? real?)
+                    (any/c
+                     exact-nonnegative-integer?
+                     real?)
+                    void?)]
+   [end-alpha (->m void?)]
+   [end-doc (->m void?)]
+   [end-page (->m void?)]
+   [erase (->m void?)]
+   [flush (->m void?)]
+   [get-alpha (->m (real-in 0 1))]
+   [get-background (->m instanceof-color%/c)]
+   [get-backing-scale (->m (>/c 0.0))]
+   [get-brush (->m instanceof-brush%/c)]
+   [get-char-height (->m (and/c real? (not/c negative?)))]
+   [get-char-width (->m (and/c real? (not/c negative?)))]
+   [get-clipping-region (->m (or/c instanceof-region%/c #f))]
+   [get-device-scale (->m (values (and/c real? (not/c negative?))
+                                  (and/c real? (not/c negative?))))]
+   [get-font (->m instanceof-font%/c)]
+   [get-gl-context (->m (or/c (is-a?/c gl-context<%>) #f))]
+   [get-initial-matrix (->m (vector/c real? real? real? real? real? real?))]
+   [get-origin (->m (values real? real?))]
+   [get-pen (->m instanceof-pen%/c)]
+   [get-path-bounding-box (->m instanceof-dc-path%/c
+                               (or/c 'path 'stroke 'fill)
+                               (values real? real? real? real?))]
+   [get-rotation (->m real?)]
+   [get-scale (->m (values real? real?))]
+   [get-size (->m (values (and/c real? (not/c negative?))
+                          (and/c real? (not/c negative?))))]
+   [get-smoothing (->m (or/c 'unsmoothed 'smoothed 'aligned))]
+   [get-text-background (->m instanceof-color%/c)]
+   [get-text-extent (->*m (string?)
+                          ((or/c instanceof-font%/c #f)
+                           any/c
+                           exact-nonnegative-integer?)
+                          (values (and/c real? (not/c negative?))
+                                  (and/c real? (not/c negative?))
+                                  (and/c real? (not/c negative?))
+                                  (and/c real? (not/c negative?))))]
+   [get-text-foreground (->m instanceof-color%/c)]
+   [get-text-mode (->m (or/c 'solid 'transparent))]
+   [get-transformation (->m (vector/c (vector/c real? real? real? real? real? real?)
+                                      real? real? real? real? real?))]
+   [glyph-exists? (->m char? boolean?)]
+   [ok? (->m boolean?)]
+   [resume-flush (->m void?)]
+   [rotate (->m real? void?)]
+   [scale (->m real? real? void?)]
+   [set-alignment-scale (->m (>/c 0.0) void?)]
+   [set-alpha (->m (real-in 0 1) void?)]
+   [set-background (->m (or/c instanceof-color%/c string?) void?)]
+   [set-brush (case->
+               (-> any/c instanceof-brush%/c void?)
+               (-> any/c
+                   (or/c instanceof-color%/c string?)
+                   (or/c 'transparent 'solid 'opaque
+                         'xor 'hilite 'panel
+                         'bdiagonal-hatch 'crossdiag-hatch
+                         'fdiagonal-hatch 'cross-hatch
+                         'horizontal-hatch 'vertical-hatch)
+                   void?))]
+   [set-clipping-rect (->m real? real?
+                           (and/c real? (not/c negative?))
+                           (and/c real? (not/c negative?))
+                           void?)]
+   [set-clipping-region (->m (or/c instanceof-region%/c #f) void?)]
+   [set-font (->m instanceof-font%/c void?)]
+   [set-initial-matrix (->m (vector/c real? real? real? real? real? real?) void?)]
+   [set-origin (->m real? real? void?)]
+   [set-pen (case->
+             (-> any/c instanceof-pen%/c void?)
+             (-> any/c
+                 (or/c instanceof-color%/c string?)
+                 (real-in 0 255)
+                 (or/c 'transparent 'solid 'xor 'hilite
+                       'dot 'long-dash 'short-dash 'dot-dash
+                       'xor-dot 'xor-long-dash 'xor-short-dash
+                       'xor-dot-dash)
+                 void?))]
+   [set-rotation (->m real? void?)]
+   [set-scale (->m real? real? void?)]
+   [set-smoothing (->m (or/c 'unsmoothed 'smoothed 'aligned) void?)]
+   [set-text-background (->m (or/c instanceof-color%/c string?) void?)]
+   [set-text-foreground (->m (or/c instanceof-color%/c string?) void?)]
+   [set-text-mode (->m (or/c 'solid 'transparent) void?)]
+   [set-transformation (->m (vector/c (vector/c real? real? real? real? real? real?)
+                                      real? real? real? real? real?)
+                             void?)]
+   [start-alpha (->m (real-in 0 1) void?)]
+   [start-doc (->m string? void?)]
+   [start-page (->m void?)]
+   [suspend-flush (->m void?)]
+   [transform (->m (vector/c real? real? real? real? real? real?)
+                   void?)]
+   [translate (->m real? real? void?)]
+   [try-color (->m instanceof-color%/c instanceof-color%/c void?)]))
+
+(define bitmap-dc%/c
+  (and/c
+   dc<%>/c
+   (class/c
     (init [bitmap (or/c instanceof-bitmap%/c #f)])
     [draw-bitmap-section-smooth
-      (->*m (instanceof-bitmap%/c
-             real? real?
-             (and/c real? (not/c negative?))
-             (and/c real? (not/c negative?))
-             real? real?
-             (and/c real? (not/c negative?))
-             (and/c real? (not/c negative?)))
-            ((or/c 'solid 'opaque 'xor)
-             (or/c instanceof-color%/c #f)
-             (or/c instanceof-bitmap%/c #f))
+     (->*m (instanceof-bitmap%/c
+            real? real?
+            (and/c real? (not/c negative?))
+            (and/c real? (not/c negative?))
+            real? real?
+            (and/c real? (not/c negative?))
+            (and/c real? (not/c negative?)))
+           ((or/c 'solid 'opaque 'xor)
+            (or/c instanceof-color%/c #f)
+            (or/c instanceof-bitmap%/c #f))
            boolean?)]
     [get-argb-pixels
-      (->*m (exact-nonnegative-integer?
-             exact-nonnegative-integer?
-             exact-nonnegative-integer?
-             exact-nonnegative-integer?
-             (and/c bytes? (not/c immutable?)))
-            (any/c any/c)
-            void?)]
+     (->*m (exact-nonnegative-integer?
+            exact-nonnegative-integer?
+            exact-nonnegative-integer?
+            exact-nonnegative-integer?
+            (and/c bytes? (not/c immutable?)))
+           (any/c any/c)
+           void?)]
     [get-bitmap (->m (or/c instanceof-bitmap%/c #f))]
     [get-pixel (->m exact-nonnegative-integer? exact-nonnegative-integer? instanceof-color%/c boolean?)]
     [set-argb-pixels
-      (->*m (exact-nonnegative-integer?
-             exact-nonnegative-integer?
-             exact-nonnegative-integer?
-             exact-nonnegative-integer?
-             bytes?)
-            (any/c any/c)
-            void?)]
+     (->*m (exact-nonnegative-integer?
+            exact-nonnegative-integer?
+            exact-nonnegative-integer?
+            exact-nonnegative-integer?
+            bytes?)
+           (any/c any/c)
+           void?)]
     [set-bitmap (->m (or/c instanceof-bitmap%/c #f) void?)]
-    [set-pixel (->m real? real? instanceof-color%/c void?)]))
+    [set-pixel (->m real? real? instanceof-color%/c void?)])))
 
 (define post-script-dc%/c
-  (class/c
+  (and/c
+   dc<%>/c
+   (class/c
     (init [interactive any/c]
           [parent (or/c (is-a?/c frame%) (is-a?/c dialog%) #f)]
           [use-paper-bbox any/c]
           [as-eps any/c]
           [width (or/c (and/c real? (not/c negative?)) #f)]
           [height (or/c (and/c real? (not/c negative?)) #f)]
-          [output (or/c path-string? output-port? #f)])))
+          [output (or/c path-string? output-port? #f)]))))
 
 (define pdf-dc%/c
-  (class/c
+  (and/c
+   dc<%>/c
+   (class/c
     (init [interactive any/c]
           [parent (or/c (is-a?/c frame%) (is-a?/c dialog%) #f)]
           [use-paper-bbox any/c]
           [as-eps any/c]
           [width (or/c (and/c real? (not/c negative?)) #f)]
           [height (or/c (and/c real? (not/c negative?)) #f)]
-          [output (or/c path-string? output-port? #f)])))
+          [output (or/c path-string? output-port? #f)]))))
 
 (define svg-dc%/c
-  (class/c
+  (and/c
+   dc<%>/c
+   (class/c
     (init [width (or/c (and/c real? (not/c negative?)) #f)]
           [height (or/c (and/c real? (not/c negative?)) #f)]
           [output (or/c path-string? output-port? #f)]
           [exists (or/c 'error 'append 'update 'can-update
                         'replace 'truncate
-                        'must-truncate 'truncate/replace)])))
+                        'must-truncate 'truncate/replace)]))))
 
 (define region%/c
   (class/c
-    (init [dc (or/c (is-a?/c dc<%>) #f)])
+    (init [dc (or/c instanceof-dc<%>/c #f)])
     (get-bounding-box (->m (values real? real? real? real?)))
-    (get-dc (->m (or/c (is-a?/c dc<%>) #f)))
+    (get-dc (->m (or/c instanceof-dc<%>/c #f)))
     (in-region? (->m real? real? boolean?))
     (intersect (->m instanceof-region%/c void?))
     (is-empty? (->m boolean?))
@@ -353,10 +527,6 @@
     [get-clipping-region (->m (or/c #f (instanceof/c region%/c)))]
     [get-recorded-datum (->m any/c)]
     [get-recorded-procedure (->m ((is-a?/c dc<%>) . -> . void?))]
-    ;; Not adding for now, in case it creates trouble for existing
-    ;; code that intends to satisfy the contract, but the method was
-    ;; added in v1.24
-    #;
     [get-ink-extent (->m (values real? real? real? real?))]))
 
 (define dc-path%/c
