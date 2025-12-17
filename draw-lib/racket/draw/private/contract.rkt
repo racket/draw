@@ -354,10 +354,9 @@
    [set-alignment-scale (->m (>/c 0.0) void?)]
    [set-alpha (->m (real-in 0 1) void?)]
    [set-background (->m (or/c instanceof-color%/c string?) void?)]
-   [set-brush (case->
-               (-> any/c instanceof-brush%/c void?)
-               (-> any/c
-                   (or/c instanceof-color%/c string?)
+   [set-brush (case->m
+               (-> instanceof-brush%/c void?)
+               (-> (or/c instanceof-color%/c string?)
                    (or/c 'transparent 'solid 'opaque
                          'xor 'hilite 'panel
                          'bdiagonal-hatch 'crossdiag-hatch
@@ -372,10 +371,9 @@
    [set-font (->m instanceof-font%/c void?)]
    [set-initial-matrix (->m (vector/c real? real? real? real? real? real?) void?)]
    [set-origin (->m real? real? void?)]
-   [set-pen (case->
-             (-> any/c instanceof-pen%/c void?)
-             (-> any/c
-                 (or/c instanceof-color%/c string?)
+   [set-pen (case->m
+             (-> instanceof-pen%/c void?)
+             (-> (or/c instanceof-color%/c string?)
                  (real-in 0 255)
                  (or/c 'transparent 'solid 'xor 'hilite
                        'dot 'long-dash 'short-dash 'dot-dash
