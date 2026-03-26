@@ -52,7 +52,7 @@
 ;; Implemented by subclasses:
 (define gl-context%
   (class* object% (gl-context<%>)
-    (define/private (with-gl-lock t alternate-evt enable-break?)
+    (define/private (with-gl-lock t wrapped-t alternate-evt enable-break?)
       (thread-resume manager-t (current-thread))
       (define current (channel-get lock-holder-ch))
       (if (and (eq? (vector-ref current 0) (current-thread))
@@ -65,7 +65,7 @@
                            (dynamic-wind
                                (lambda ()
                                  (thread-cell-set! current-gl-context this))
-                               t
+                               wrapped-t
                                (lambda ()
                                  (thread-cell-set! current-gl-context #f)
                                  (channel-put ch #t))))))
@@ -76,15 +76,17 @@
     
     (define/public (call-as-current t [alternate-evt never-evt] [enable-breaks? #f])
       (with-gl-lock
+       t
        (lambda ()
          (do-call-as-current t))
        alternate-evt
        enable-breaks?))
 
     (define/public (swap-buffers)
+      (define (do-swap) (do-swap-buffers))
       (with-gl-lock
-       (lambda ()
-         (do-swap-buffers))
+       do-swap
+       do-swap
        never-evt
        #f))
 
