@@ -10,41 +10,41 @@
           define-gobj))
 
 (define-runtime-lib glib-lib
-  [(unix) (ffi-lib "libglib-2.0" '("0" ""))]
-  [(macosx)
+  [macosx
    (ffi-lib "libintl.9.dylib")
    (ffi-lib "libglib-2.0.0.dylib")]
-  [(windows)
+  [windows
    (ffi-lib "libiconv-2.dll")
    (ffi-lib "libintl-9.dll")
-   (ffi-lib "libglib-2.0-0.dll")])
+   (ffi-lib "libglib-2.0-0.dll")]
+  [else (ffi-lib "libglib-2.0" '("0" ""))])
 
 (define-runtime-lib gmodule-lib
-  [(unix) (ffi-lib "libgmodule-2.0" '("0" ""))]
-  [(macosx)
+  [macosx
    (ffi-lib "libgthread-2.0.0.dylib")
    (ffi-lib "libgmodule-2.0.0.dylib")]
-  [(windows)
+  [windows
    (ffi-lib "libgthread-2.0-0.dll")
-   (ffi-lib "libgmodule-2.0-0.dll")])
+   (ffi-lib "libgmodule-2.0-0.dll")]
+  [else (ffi-lib "libgmodule-2.0" '("0" ""))])
 
 (define-runtime-lib libffi-lib
   ;; needed by libgobject
-  [(unix)
+  [macosx
+   (ffi-lib "libffi.6.dylib")]
+  [windows
+   (ffi-lib "libffi-6.dll")]
+  [else
    ;; If an expected version is not available, then assume it's not
    ;; natipkg, and shared-library search when libgobject is loaded
-   (ffi-lib "libffi" '("6" "7" "8" "") #:fail (lambda () #f))]
-  [(macosx)
-   (ffi-lib "libffi.6.dylib")]
-  [(windows)
-   (ffi-lib "libffi-6.dll")])
+   (ffi-lib "libffi" '("6" "7" "8" "") #:fail (lambda () #f))])
 
 (define-runtime-lib gobj-lib
-  [(unix) (ffi-lib "libgobject-2.0" '("0" ""))]
-  [(macosx)
+  [macosx
    (ffi-lib "libgobject-2.0.0.dylib")]
-  [(windows)
-   (ffi-lib "libgobject-2.0-0.dll")])
+  [windows
+   (ffi-lib "libgobject-2.0-0.dll")]
+  [else (ffi-lib "libgobject-2.0" '("0" ""))])
 
 (define-ffi-definer define-glib glib-lib)
 (define-ffi-definer define-gmodule gmodule-lib)

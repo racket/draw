@@ -1,56 +1,46 @@
 #lang racket/base
-(require ffi/unsafe
-         racket/runtime-path
+(require ffi/unsafe/runtime-lib
          ffi/winapi
-         setup/cross-system
          (for-syntax racket/base
-                     ffi/winapi
-                     setup/cross-system))
+                     syntax/parse/pre
+                     ffi/winapi))
 
-(provide define-runtime-lib
+(provide (rename-out [define-runtime-lib/legacy
+                       define-runtime-lib])
          win64?
          (for-syntax win64?))
 
-(define-syntax define-runtime-lib
-  ;; the ids macosx unix windows don't appear to be bound here, but I added win32 and win64 anyways
-  (syntax-rules (macosx unix windows win32 win64 ffi-lib)
-    [(_ lib-id
-        [(unix) unix-lib]
-        [(macosx) (ffi-lib mac-lib) ...]
-        [(windows) (ffi-lib windows-lib) ...])
-     (begin
-       (define-runtime-path-list libs
-         #:runtime?-id runtime?
-         (case (if runtime? (system-type) (cross-system-type))
-           [(macosx) '((so mac-lib) ...)]
-           [(unix) null]
-           [(windows) `((so windows-lib) ...)]))
+(begin-for-syntax
+  (define-syntax-class :system-spec
+    #:attributes (modern)
+    #:datum-literals (windows win32 win64 macosx)
+    ;; legacy cases --------------------
+    (pattern (windows)
+             #:attr modern #'windows)
+    (pattern (win32)
+             #:attr modern #'(and windows 32))
+    (pattern (win64)
+             #:attr modern #'(and windows 64))
+    (pattern (macosx)
+             #:attr modern #'macosx)
+    ;; modern cases --------------------
+    (pattern any
+             #:attr modern #'any)))
 
-       (define lib-id
-         (if (null? libs)
-             unix-lib
-             (for/fold ([v #f]) ([lib (in-list libs)])
-               (ffi-lib lib)))))]
-    [(_ lib-id
-        [(unix) unix-lib]
-        [(macosx) (ffi-lib mac-lib) ...]
-        [(win32) (ffi-lib win32-lib) ...]
-        [(win64) (ffi-lib win64-lib) ...])
-     (begin
-       (define-runtime-path-list libs
-         #:runtime?-id runtime?
-         (case (if runtime? (system-type) (cross-system-type))
-           [(macosx) '((so mac-lib) ...)]
-           [(unix) null]
-           [(windows)
-            (if win64?
-                `((so win64-lib) ...)
-                `((so win32-lib) ...))]))
-
-       (define lib-id
-         (if (null? libs)
-             unix-lib
-             (for/fold ([v #f]) ([lib (in-list libs)])
-               (ffi-lib lib)))))]))
-
-
+(define-syntax (define-runtime-lib/legacy stx)
+  (syntax-parse stx
+    #:literals (else)
+    #:datum-literals (unix)
+    [(_ lib-id:id
+        ;; old-style "else", support legacy `system` specs
+        [(unix) unix-lib-expr ...+]
+        [system::system-spec lib ...]
+        ...)
+     #'(define-runtime-lib lib-id
+         [system.modern lib ...]
+         ...
+         [else unix-lib-expr ...])]
+    [(_ f ...)
+     ;; assume modern syntax
+     (syntax/loc stx
+       (define-runtime-lib f ...))]))

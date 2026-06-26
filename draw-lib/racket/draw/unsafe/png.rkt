@@ -7,7 +7,11 @@
          "callback.rkt")
 
 (define-runtime-lib png-lib
-  [(unix)
+  [macosx (ffi-lib "libpng16.16.dylib")]
+  [windows
+   (ffi-lib "zlib1.dll")
+   (ffi-lib "libpng16-16.dll")]
+  [else
    ;; Most Linux distros supply "libpng12", while other Unix
    ;; variants often have just "libpng", etc.
    (let loop ([alts '(("libpng16" ("16" ""))
@@ -17,11 +21,7 @@
       [(null? alts) (ffi-lib "libpng")]
       [else (apply ffi-lib (car alts)
                    #:fail (lambda ()
-                            (loop (cdr alts))))]))]
-  [(macosx) (ffi-lib "libpng16.16.dylib")]
-  [(windows)
-   (ffi-lib "zlib1.dll")
-   (ffi-lib "libpng16-16.dll")])
+                            (loop (cdr alts))))]))])
 
 (define-ffi-definer define-png png-lib
   #:provide provide)
