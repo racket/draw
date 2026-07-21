@@ -74,6 +74,9 @@ If @racket[enable-breaks?] is true, then the method uses
  @racket[sync/enable-break] while blocking for the context-setting
  lock instead of @racket[sync].
 
+@history[#:changed "1.24" @elem{Added support for nested calls from
+          the same thread. (Previous versions were documented to
+          support nesting, but in practice it did not work correctly.)}]
 }
 
 @defmethod[(get-handle) cpointer?]{
