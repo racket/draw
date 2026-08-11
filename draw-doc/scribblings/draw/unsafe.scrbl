@@ -57,4 +57,21 @@ surface is effectively converted to a stipple bitmap for the result datum.}
 A reference to the Cairo library for use with functions such as
 @racket[get-ffi-obj], or @racket[#f] if Cairo is unavailable.}
 
+@section{Pango Library}
 
+@defmodule[racket/draw/unsafe/pango-lib]
+
+@defthing*[([pango-lib ffi-lib?]
+            [pangocairo-lib ffi-lib?])]{
+
+References to the Pango and PangoCairo libraries for use with functions
+such as @racket[get-ffi-obj].
+
+@history[#:added "1.25"]}
+
+@defthing[pangowin32-lib (or/c ffi-lib? #f)]{
+
+A reference to the Pango Win32 library for use with functions such as
+@racket[get-ffi-obj], or @racket[#f] on non-Windows platforms.
+
+@history[#:added "1.25"]}
