@@ -1789,30 +1789,36 @@
                    ;; We use the slower, per-layout way:
                    (let* ([query-and-cache
                            (lambda (ch layout)
-                             (let ([logical (make-PangoRectangle 0 0 0 0)])
-                               (pango_layout_get_extents layout #f logical)
-                               (let ([baseline (pango_layout_get_baseline layout)]
-                                     [orig-h (PangoRectangle-height logical)])
-                                 (let ([lw (force-hinting
-                                            (fl/ (->fl (PangoRectangle-width logical))
-                                                 (->fl PANGO_SCALE)))]
-                                       [flh (fl/ (->fl orig-h)
-                                                 (->fl PANGO_SCALE))]
-                                       [ld (fl/ (->fl (- orig-h baseline))
-                                                (->fl PANGO_SCALE))]
-                                       [la 0.0])
-                                   (let ([lh (flceiling flh)])
-                                     (when cache
-                                       (hash-set! cache (char->integer ch) 
-                                                  (vector lw lh ld la 
-                                                          ;; baseline in Pango units; for fast path
-                                                          baseline
-                                                          ;; rounded width in Pango units; for fast path
-                                                          (fl->exact-integer
-                                                           (flfloor (fl* lw (->fl PANGO_SCALE))))
-                                                          ;; unrounded height, for slow-path alignment
-                                                          flh)))
-                                     (values lw lh ld la flh))))))]
+                             (cond
+                               [(find-emoji-sequence (string ch) 0)
+                                => (lambda (span)
+                                     (define-values (nw nh nd na) (emoji-extent font (string ch)))
+                                     (values nw nh nd na nh))]
+                               [else
+                                (let ([logical (make-PangoRectangle 0 0 0 0)])
+                                  (pango_layout_get_extents layout #f logical)
+                                  (let ([baseline (pango_layout_get_baseline layout)]
+                                        [orig-h (PangoRectangle-height logical)])
+                                    (let ([lw (force-hinting
+                                               (fl/ (->fl (PangoRectangle-width logical))
+                                                    (->fl PANGO_SCALE)))]
+                                          [flh (fl/ (->fl orig-h)
+                                                    (->fl PANGO_SCALE))]
+                                          [ld (fl/ (->fl (- orig-h baseline))
+                                                   (->fl PANGO_SCALE))]
+                                          [la 0.0])
+                                      (let ([lh (flceiling flh)])
+                                        (when cache
+                                          (hash-set! cache (char->integer ch) 
+                                                     (vector lw lh ld la 
+                                                             ;; baseline in Pango units; for fast path
+                                                             baseline
+                                                             ;; rounded width in Pango units; for fast path
+                                                             (fl->exact-integer
+                                                              (flfloor (fl* lw (->fl PANGO_SCALE))))
+                                                             ;; unrounded height, for slow-path alignment
+                                                             flh)))
+                                        (values lw lh ld la flh)))))]))]
                           [bl
                            (if draw-mode
                                ;; For drawing, need to compute baseline first:

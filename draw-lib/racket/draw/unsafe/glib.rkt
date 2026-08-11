@@ -11,6 +11,9 @@
           define-gobj))
 
 (define-runtime-lib glib-lib
+  [(and macosx 64)
+   (so "libintl.8.dylib")
+   (so "libglib-2.0.0.dylib")]
   [macosx
    (so "libintl.9.dylib")
    (so "libglib-2.0.0.dylib")]
@@ -38,6 +41,8 @@
 
 (define-runtime-lib libffi-lib
   ;; needed by libgobject
+  [(and macosx 64)
+   (so "libffi.8.dylib")]
   [macosx
    (so "libffi.6.dylib")]
   [(and windows 64)

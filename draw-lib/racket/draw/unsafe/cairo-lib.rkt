@@ -8,6 +8,11 @@
          "../private/utils.rkt")
 
 (define-runtime-lib fontconfig-lib
+  [(and macosx 64)
+   (so "libpng16.16.dylib")
+   (so "libexpat.1.dylib")
+   (so "libfreetype.6.dylib")
+   (so "libfontconfig.1.dylib")]
   [macosx
    (so "libpng16.16.dylib")
    (so "libexpat.1.dylib")
