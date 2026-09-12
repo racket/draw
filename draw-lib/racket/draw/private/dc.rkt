@@ -2218,11 +2218,18 @@
                     ;; Pango metrics are ok:
                     (void)]
                    [(macosx)
-                    ;; Pango metrics compenstate for the scale for width,
-                    ;; but they compensate backwards(!) for height:
-                    (init-effective-matrix mx)
-                    (set-cairo_matrix_t-xx! mx 1.0)
-                    (set-cairo_matrix_t-yy! mx (/ (cairo_matrix_t-yy mx)))]
+                    (cond
+                      [((pango_version) . >= . 15800)
+                       ;; Pango metrics don't compenstate for the scale for width,
+                       ;; but they do for height:
+                       (init-effective-matrix mx)
+                       (set-cairo_matrix_t-yy! mx 1.0)]
+                      [else
+                       ;; Pango metrics compenstate for the scale for width,
+                       ;; but they compensate backwards(!) for height:
+                       (init-effective-matrix mx)
+                       (set-cairo_matrix_t-xx! mx 1.0)
+                       (set-cairo_matrix_t-yy! mx (/ (cairo_matrix_t-yy mx)))])]
                    [else
                     (cond
                       [((pango_version) . >= . 15003)
