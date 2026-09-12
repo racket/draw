@@ -84,6 +84,7 @@
           [e (cast (malloc sizeof_jpeg_error_mgr 'raw) _pointer _jpeg_error_mgr-pointer)])
       (set-jpeg_any_struct-err! m (jpeg_std_error e))
       (set-jpeg_error_mgr-error_exit! e (cast error-exit (_fun #:atomic? callback-atomic?
+                                                               #:async-apply callback-async-apply
                                                                _j_common_ptr -> _void) _fpointer))
       (let ([s (with-handlers ([exn:fail? (lambda (exn) (exn-message exn))])
                  (jpeg_CreateDecompress/test m 0 dummy-size)
@@ -640,7 +641,10 @@
            [funs (box null)])
        (set-jpeg_decompress_struct-err! m (jpeg_std_error e))
        (set-jpeg_error_mgr-error_exit! e (cast error-exit
-                                               (_fun #:keep funs #:atomic? callback-atomic? _j_common_ptr -> _void)
+                                               (_fun #:keep funs
+                                                     #:atomic? callback-atomic?
+                                                     #:async-apply callback-async-apply
+                                                     _j_common_ptr -> _void)
                                                _fpointer))
        (jpeg_CreateDecompress m JPEG_LIB_VERSION (ctype-sizeof _jpeg_decompress_struct))
        (set-jpeg_decompress_struct-src*! m s)
@@ -649,17 +653,29 @@
        (set-jpeg_source_mgr-next_input_byte! s #f)
        (set-jpeg_source_mgr-bytes_in_buffer! s 0)
        (set-jpeg_source_mgr-init_source! s (cast init-source
-                                                 (_fun #:keep funs #:atomic? callback-atomic? _j_decompress_ptr -> _void)
+                                                 (_fun #:keep funs
+                                                       #:atomic? callback-atomic?
+                                                       #:async-apply callback-async-apply
+                                                       _j_decompress_ptr -> _void)
                                                  _fpointer))
        (set-jpeg_source_mgr-fill_input_buffer! s (cast fill-input-buffer
-                                                       (_fun #:keep funs #:atomic? callback-atomic? _j_decompress_ptr -> _jbool)
+                                                       (_fun #:keep funs
+                                                             #:atomic? callback-atomic?
+                                                             #:async-apply callback-async-apply
+                                                             _j_decompress_ptr -> _jbool)
                                                        _fpointer))
        (set-jpeg_source_mgr-skip_input_data! s (cast skip-input-data
-                                                     (_fun #:keep funs #:atomic? callback-atomic? _j_decompress_ptr _long -> _void)
+                                                     (_fun #:keep funs
+                                                           #:atomic? callback-atomic?
+                                                           #:async-apply callback-async-apply
+                                                           _j_decompress_ptr _long -> _void)
                                                      _fpointer))
        (set-jpeg_source_mgr-resync_to_restart! s jpeg_resync_to_restart)
        (set-jpeg_source_mgr-term_source! s (cast term-source
-                                                 (_fun #:keep funs #:atomic? callback-atomic? _j_decompress_ptr -> _void)
+                                                 (_fun #:keep funs
+                                                       #:atomic? callback-atomic?
+                                                       #:async-apply callback-async-apply
+                                                       _j_decompress_ptr -> _void)
                                                  _fpointer))
        m))))
 
@@ -687,7 +703,10 @@
             [b (malloc 'raw BUFFER-SIZE)])
        (set-jpeg_compress_struct-err! m (jpeg_std_error e))
        (set-jpeg_error_mgr-error_exit! e (cast error-exit
-                                               (_fun #:keep funs _j_common_ptr -> _void)
+                                               (_fun #:keep funs
+                                                     #:atomic? callback-atomic?
+                                                     #:async-apply callback-async-apply
+                                                     _j_common_ptr -> _void)
                                                _fpointer))
        (jpeg_CreateCompress m JPEG_LIB_VERSION (ctype-sizeof _jpeg_compress_struct))
        (set-jpeg_compress_struct-dest*! m d)
@@ -696,13 +715,22 @@
        (set-jpeg_destination_mgr-next_output_byte! d b)
        (set-jpeg_destination_mgr-free_in_buffer! d BUFFER-SIZE)
        (set-jpeg_destination_mgr-init_destination! d (cast init-destination
-                                                           (_fun #:keep funs _j_compress_ptr -> _void)
+                                                           (_fun #:keep funs
+                                                                 #:atomic? callback-atomic?
+                                                                 #:async-apply callback-async-apply
+                                                                 _j_compress_ptr -> _void)
                                                            _fpointer))
        (set-jpeg_destination_mgr-empty_output_buffer! d (cast empty-output-buffer
-                                                              (_fun #:keep funs _j_compress_ptr -> _jbool)
+                                                              (_fun #:keep funs
+                                                                    #:atomic? callback-atomic?
+                                                                    #:async-apply callback-async-apply
+                                                                    _j_compress_ptr -> _jbool)
                                                               _fpointer))
        (set-jpeg_destination_mgr-term_destination! d (cast term-destination
-                                                           (_fun #:keep funs _j_compress_ptr -> _void)
+                                                           (_fun #:keep funs
+                                                                 #:atomic? callback-atomic?
+                                                                 #:async-apply callback-async-apply
+                                                                 _j_compress_ptr -> _void)
                                                            _fpointer))
        m))))
 

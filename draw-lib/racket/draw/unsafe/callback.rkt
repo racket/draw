@@ -3,6 +3,7 @@
          racket/port)
 
 (provide callback-atomic?
+         callback-async-apply
 
          sanitize-input-port
          sanitize-output-port
@@ -15,6 +16,7 @@
 ;; to escape with an exception.
 
 (define callback-atomic? (eq? 'chez-scheme (system-type 'vm)))
+(define callback-async-apply (and (eq? 'chez-scheme (system-type 'vm)) (lambda (f) (f))))
 
 ;; Atomicity implies that a callback cannot read from or write to an
 ;; arbitrary port, so we have to "sanitize" a port by adding an

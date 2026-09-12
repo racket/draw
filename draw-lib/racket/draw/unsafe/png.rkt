@@ -59,9 +59,11 @@
         _pointer
         (_fun #:keep (lambda (v) ((current-fun-keep) v))
               #:atomic? callback-atomic?
+              #:async-apply callback-async-apply
               _png_structp _string -> _void)
         (_fun #:keep (lambda (v) ((current-fun-keep) v))
               #:atomic? callback-atomic?
+              #:async-apply callback-async-apply
               _png_structp _string -> _void)
         -> _png_structp))
 
@@ -85,9 +87,11 @@
         _pointer
         (_fun #:keep (lambda (v) ((current-fun-keep) v))
               #:atomic? callback-atomic?
+              #:async-apply callback-async-apply
               _png_structp _string -> _void)
         (_fun #:keep (lambda (v) ((current-fun-keep) v))
               #:atomic? callback-atomic?
+              #:async-apply callback-async-apply
               _png_structp _string -> _void)
         -> _png_structp))
 (define png_destroy_write_struct1
@@ -140,6 +144,7 @@
                                   _pointer
                                   (_fun #:keep (lambda (v) ((current-fun-keep) v))
                                         #:atomic? callback-atomic?
+                                        #:async-apply callback-async-apply
                                         _png_structp
                                         _pointer
                                         _png_size_t
@@ -149,19 +154,25 @@
                                    _pointer
                                    (_fun #:keep (lambda (v) ((current-fun-keep) v))
                                          #:atomic? callback-atomic?
+                                         #:async-apply callback-async-apply
                                          _png_structp
                                          _pointer
                                          _png_size_t
                                          -> _void)
                                    (_fun #:keep (lambda (v) ((current-fun-keep) v))
                                          #:atomic? callback-atomic?
+                                         #:async-apply callback-async-apply
                                          _png_structp
                                          -> _void)
                                    -> _void))
 (define-png png_get_io_ptr (_fun _png_structp -> _pointer))
 
-(define-png png_get_rowbytes (_fun #:callback-exns? callback-atomic? _png_structp _png_infop -> _uint32))
-(define-png png_read_rows (_fun #:callback-exns? callback-atomic? _png_structp _pointer #;(_vector i _bytes) _pointer _uint32 -> _void))
+(define-png png_get_rowbytes (_fun #:callback-exns? callback-atomic?
+                                   #:async-apply callback-async-apply
+                                   _png_structp _png_infop -> _uint32))
+(define-png png_read_rows (_fun #:callback-exns? callback-atomic?
+                                #:async-apply callback-async-apply
+                                _png_structp _pointer #;(_vector i _bytes) _pointer _uint32 -> _void))
 (define-png png_write_image (_fun #:callback-exns? callback-atomic? _png_structp _pointer #;(_vector i _bytes) -> _void))
 
 (define-png png_write_end (_fun #:callback-exns? callback-atomic? _png_structp _png_infop -> _void))
