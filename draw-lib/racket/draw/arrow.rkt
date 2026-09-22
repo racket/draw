@@ -48,10 +48,10 @@
                     #:arrow-root-radius [arrow-root-radius 2.5]
                     #:%age [%age #f]
                     #:bb [bb #f])
-  (define %age-ctc (format "~s" '(or/c #f (real-in -1 1) "leftup")))
   (unless (or (not %age)
               (and (real? %age) (<= -1 %age 1))
               (equal? %age "leftup"))
+    (define %age-ctc (format "~s" '(or/c #f (real-in -1 1) "leftup")))
     (raise-argument-error 'draw-arrow
                           %age-ctc
                           %age))
