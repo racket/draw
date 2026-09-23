@@ -330,14 +330,14 @@
                   b&w?
                   alpha?))))))
 
-(define (malloc-rows h row-bytes)
+(define (malloc-rows h row-bytes [memory-mode 'atomic-interior])
   (let* ([align (lambda (v) (if (positive? (remainder v 8))
                                 (+ v (- 8 (remainder v 8)))
                                 v))]
          [table-size (align (* h (ctype-sizeof _pointer)))]
          [row-size (align row-bytes)]
          [memory (malloc (+ table-size (* row-size h))
-                         'atomic-interior)]
+                         memory-mode)]
          [rows memory])
     (for ([i (in-range h)])
       (ptr-set! rows _pointer i (ptr-add memory (+ table-size (* i row-size)))))
@@ -406,12 +406,17 @@
       (png_write_image (writer-png writer) #f)
       (let* ([h (vector-length vector-of-rows)]
              [w (bytes-length (vector-ref vector-of-rows 0))]
-             [rows (malloc-rows h w)])
-        (for/list ([i (in-range h)])
-          (memcpy (ptr-ref rows _pointer i)
-                  (vector-ref vector-of-rows i)
-                  w))
-        (png_write_image (writer-png writer) rows)))
+             [rows (malloc-rows h w 'raw)])
+        (dynamic-wind
+          void
+          (lambda ()
+            (for ([i (in-range h)])
+              (memcpy (ptr-ref rows _pointer i)
+                      (vector-ref vector-of-rows i)
+                      w))
+            (png_write_image (writer-png writer) rows))
+          (lambda ()
+            (free rows)))))
   (png_write_end (writer-png writer) (writer-info writer))
   (flush-sanitized-output (writer-info writer)))
 

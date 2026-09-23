@@ -47,6 +47,32 @@
 (check "help16x16.xbm" 'png 'unknown)
 (check "help.bmp" 'png 'unknown)
 
+;; A PNG output callback allocates while libpng uses the row-pointer table.
+;; Repeatedly write a large bitmap after reloading it, so that the table stays
+;; valid across a possible GC in the callback.
+(let ()
+  (define source (make-temporary-file "png-source-~a.png"))
+  (define target (make-temporary-file "png-target-~a.png"))
+  (dynamic-wind
+   void
+   (lambda ()
+     (define bitmap (make-object bitmap% 1920 1080 #f #t))
+     (define dc (new bitmap-dc% [bitmap bitmap]))
+     (send dc set-brush "midnightblue" 'solid)
+     (send dc draw-rectangle 0 0 1920 1080)
+     (send dc set-bitmap #f)
+     (unless (send bitmap save-file source 'png)
+       (error 'bitmap-stress "could not write PNG source"))
+     (define reloaded (make-object bitmap% source))
+     (unless (send reloaded ok?)
+       (error 'bitmap-stress "could not reload PNG source"))
+     (for ([i (in-range 25)])
+       (unless (send reloaded save-file target 'png)
+         (error 'bitmap-stress "could not write PNG target"))))
+   (lambda ()
+     (when (file-exists? source) (delete-file source))
+     (when (file-exists? target) (delete-file target)))))
+
 ;; Also check that we don't run out of C stack space due to error escapes
 (define (ones)
   (if (eq? 'racket (system-type 'vm))
