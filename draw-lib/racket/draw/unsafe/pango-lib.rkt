@@ -8,6 +8,7 @@
 
 (define-runtime-lib pango-lib
   [macosx
+   (so "libgio-2.0.0.dylib")
    (so "libfribidi.0.dylib")
    (so "libpango-1.0.0.dylib")]
   [(and windows 64)
